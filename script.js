@@ -1,16 +1,22 @@
-// Ajustes por defecto
+// === Configuración ===
 const LATITUDE = 42.88235
 const LONGITUDE = -8.54586
 const ZOOM = 13
 const MAXZOOM = 18
+const ICONSIZE = 30
+const ICONANCHOR = 15
 
+// === Estado ===
 let userPosition = null
 let map = null
 
-let pArray = []
+let pointDict = {}
+let pointCounter = 1
 
+// === Referencias al DOM ===
 let pointList = document.getElementById('point-list')
 
+// === Eventos ===
 function init() {
     navigator.geolocation.getCurrentPosition(showPosition, showErrorLocation)
 }
@@ -35,47 +41,10 @@ function showErrorLocation(err) {
 }
 
 function onMapClick(e) {
-    console.log(e)
-    console.log(e.latlng.lat)
-    console.log(e.latlng.lng)
-
-    let point = L.marker([e.latlng.lat, e.latlng.lng], {
-        icon: L.divIcon({
-            className: 'numbered-marker',
-            html: `${pArray.length + 1}`,
-            iconSize: [30, 30],
-            iconAnchor: [15, 15],
-        }),
-    })
-
-    addPoint(point)
+    addPoint(e.latlng.lat, e.latlng.lng)
 }
 
-
-function addPoint(point) {
-    point.addTo(map)
-    point.getElement().dataset.pointId = point._leaflet_id
-
-    pArray.push(point)
-    console.log(point)
-
-    let li = document.createElement('li')
-    li.classList.add("point-item")
-    li.dataset.pointId = point._leaflet_id
-
-    li.innerHTML = `
-        <span>${pArray.length}</span>
-        <span>${point.getLatLng().lat.toFixed(4)}, ${point.getLatLng().lng.toFixed(4)}</span>
-        <span>🗑️</span>
-    `
-
-    pointList.appendChild(li)
-}
-
-function initEvents() {
-    map.on('click', onMapClick)
-}
-
+// === Lógica / Render ===
 function renderMap(lat, lon) {
     map = L.map('map').setView([lat, lon], ZOOM)
 
@@ -86,6 +55,41 @@ function renderMap(lat, lon) {
     }).addTo(map)
 
     initEvents()
+}
+
+function initEvents() {
+    map.on('click', onMapClick)
+}
+
+function addPoint(lat, lng) {
+    let point = L.marker([lat, lng], {
+        icon: L.divIcon({
+            className: 'numbered-marker',
+            html: `${pointCounter}`,
+            iconSize: [ICONSIZE, ICONSIZE],
+            iconAnchor: [ICONANCHOR, ICONANCHOR],
+        }),
+    })
+
+    point.addTo(map)
+    point.getElement().dataset.pointId = point._leaflet_id
+
+    pointDict[point._leaflet_id] = point
+    console.log(point)
+
+    let li = document.createElement('li')
+    li.classList.add('point-item')
+    li.dataset.pointId = point._leaflet_id
+
+    li.innerHTML = `
+        <span>${pointCounter}</span>
+        <span>${point.getLatLng().lat.toFixed(4)}, ${point.getLatLng().lng.toFixed(4)}</span>
+        <span>🗑️</span>
+    `
+
+    pointList.appendChild(li)
+
+    pointCounter++
 }
 
 init()
