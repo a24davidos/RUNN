@@ -54,6 +54,8 @@ function onMapClick(e) {
 
 function addPoint(point) {
     point.addTo(map)
+    point.getElement().dataset.pointId = point._leaflet_id
+
     pArray.push(point)
     console.log(point)
 
