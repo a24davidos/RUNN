@@ -11,10 +11,10 @@ let userPosition = null
 let map = null
 
 let pointDict = {}
-let pointCounter = 1
 
 // === Referencias al DOM ===
 let pointList = document.getElementById('point-list')
+let pointItems = pointList.getElementsByTagName('li')
 
 // === Eventos ===
 function init() {
@@ -24,7 +24,7 @@ function init() {
 function showPosition(pos) {
     //Guardamos la posición del usuario
     userPosition = pos
-
+    //Renderizamos el mapa con su posición
     renderMap(userPosition.coords.latitude, userPosition.coords.longitude)
 }
 
@@ -69,10 +69,12 @@ function initEvents() {
 }
 
 function addPoint(lat, lng) {
+    let pointNumber = Object.keys(pointDict).length + 1
+
     let point = L.marker([lat, lng], {
         icon: L.divIcon({
             className: 'numbered-marker',
-            html: `${pointCounter}`,
+            html: `${pointNumber}`,
             iconSize: [ICONSIZE, ICONSIZE],
             iconAnchor: [ICONANCHOR, ICONANCHOR],
         }),
@@ -89,20 +91,16 @@ function addPoint(lat, lng) {
     li.dataset.pointId = point._leaflet_id
 
     li.innerHTML = `
-        <span>${pointCounter}</span>
+        <span>${pointNumber}</span>
         <span>${point.getLatLng().lat.toFixed(4)}, ${point.getLatLng().lng.toFixed(4)}</span>
         <button class="delete-btn">🗑️</button>
     `
 
     pointList.appendChild(li)
-
-    pointCounter++
 }
 
 function deletePoint(e) {
     let id = e.target.closest('li').dataset.pointId
-    console.log(id)
-
     //Eliminamos el nodo de la lista
     pointList.querySelector(`[data-point-id="${id}"]`).remove()
 
@@ -111,6 +109,18 @@ function deletePoint(e) {
 
     //Eliminamos la referencia de la lista
     delete pointDict[id]
+
+    recalculatePoints()
+}
+
+function recalculatePoints() {
+    let arrPointItems = Array.from(pointItems)
+
+    arrPointItems.forEach((item, index) => {
+        item.children[0].innerHTML = index + 1
+        let marker = pointDict[item.dataset.pointId]
+        marker.getElement().innerHTML = index + 1
+    })
 }
 
 init()
