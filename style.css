@@ -74,16 +74,43 @@ h6 {
     isolation: isolate;
 }
 
-#container{
+#container {
     display: flex;
     height: 100vh;
 }
 
-#sidebar{
-    flex: 0 0 30%;
+#sidebar {
+    flex: 0 0 20%;
 }
 
 #map {
     height: 100%;
     flex: 1;
+}
+
+.numbered-marker {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #3388ff;
+    color: #fff;
+    border-radius: 50%;
+    border: 1px solid black;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.leaflet-marker-icon {
+    display: flex;
+}
+
+#point-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.point-item{
+    border: 1px solid black;
 }

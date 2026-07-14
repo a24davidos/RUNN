@@ -1,21 +1,25 @@
+// Ajustes por defecto
+const LATITUDE = 42.88235
+const LONGITUDE = -8.54586
+const ZOOM = 13
+const MAXZOOM = 18
+
 let userPosition = null
 let map = null
+
+let pArray = []
+
+let pointList = document.getElementById('point-list')
+
+function init() {
+    navigator.geolocation.getCurrentPosition(showPosition, showErrorLocation)
+}
 
 function showPosition(pos) {
     //Guardamos la posición del usuario
     userPosition = pos
 
-    //Inicializamos la posición del mapa
-    map = L.map('map').setView(
-        [userPosition.coords.latitude, userPosition.coords.longitude],
-        13,
-    )
-
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution:
-            '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map)
+    renderMap(userPosition.coords.latitude, userPosition.coords.longitude)
 }
 
 function showErrorLocation(err) {
@@ -26,10 +30,54 @@ function showErrorLocation(err) {
     } else {
         console.log('No hemos podido encontrar tu localización')
     }
+
+    renderMap(LATITUDE, LONGITUDE)
 }
 
-//Llamamos a la geolocalización
-if (navigator.geolocation) {
-    //Si funciona mostramos la posición
-    navigator.geolocation.getCurrentPosition(showPosition, showErrorLocation)
+function onMapClick(e) {
+    console.log(e)
+    console.log(e.latlng.lat)
+    console.log(e.latlng.lng)
+
+    let point = L.marker([e.latlng.lat, e.latlng.lng], {
+        icon: L.divIcon({
+            className: 'numbered-marker',
+            html: `${pArray.length + 1}`,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+        }),
+    })
+
+    addPoint(point)
 }
+
+
+function addPoint(point) {
+    point.addTo(map)
+    pArray.push(point)
+    console.log(point)
+
+    let li = document.createElement('li')
+    li.classList.add("point-item")
+    li.innerText = pArray.length
+
+    pointList.appendChild(li)
+}
+
+function initEvents() {
+    map.on('click', onMapClick)
+}
+
+function renderMap(lat, lon) {
+    map = L.map('map').setView([lat, lon], ZOOM)
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: MAXZOOM,
+        attribution:
+            '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map)
+
+    initEvents()
+}
+
+init()
