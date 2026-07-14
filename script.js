@@ -59,6 +59,13 @@ function renderMap(lat, lon) {
 
 function initEvents() {
     map.on('click', onMapClick)
+
+    //Evento para eliminar puntos
+    pointList.addEventListener('click', (e) => {
+        if (e.target.className == 'delete-btn') {
+            deletePoint(e)
+        }
+    })
 }
 
 function addPoint(lat, lng) {
@@ -90,6 +97,20 @@ function addPoint(lat, lng) {
     pointList.appendChild(li)
 
     pointCounter++
+}
+
+function deletePoint(e) {
+    let id = e.target.closest('li').dataset.pointId
+    console.log(id)
+
+    //Eliminamos el nodo de la lista
+    pointList.querySelector(`[data-point-id="${id}"]`).remove()
+
+    //Eliminamos la referencia dentro de leaflet
+    pointDict[id].remove()
+
+    //Eliminamos la referencia de la lista
+    delete pointDict[id]
 }
 
 init()
