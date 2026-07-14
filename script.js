@@ -59,7 +59,13 @@ function addPoint(point) {
 
     let li = document.createElement('li')
     li.classList.add("point-item")
-    li.innerText = pArray.length
+    li.dataset.pointId = point._leaflet_id
+
+    li.innerHTML = `
+        <span>${pArray.length}</span>
+        <span>${point.getLatLng().lat.toFixed(4)}, ${point.getLatLng().lng.toFixed(4)}</span>
+        <span>🗑️</span>
+    `
 
     pointList.appendChild(li)
 }
