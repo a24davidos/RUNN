@@ -15,6 +15,7 @@ let pointDict = {}
 // === Referencias al DOM ===
 let pointList = document.getElementById('point-list')
 let pointItems = pointList.getElementsByTagName('li')
+let spanCounter = document.getElementById("counter")
 
 // === Eventos ===
 function init() {
@@ -68,6 +69,11 @@ function initEvents() {
     })
 }
 
+function updateSpanCounter(count) {
+    spanCounter.innerHTML = count
+}
+
+
 function addPoint(lat, lng) {
     let pointNumber = Object.keys(pointDict).length + 1
 
@@ -96,7 +102,11 @@ function addPoint(lat, lng) {
         <button class="delete-btn">🗑️</button>
     `
 
+    //Añadimos a la lista de puntos
     pointList.appendChild(li)
+
+    //Recalculamos el contador de puntos
+    updateSpanCounter(pointNumber)
 }
 
 function deletePoint(e) {
@@ -121,6 +131,11 @@ function recalculatePoints() {
         let marker = pointDict[item.dataset.pointId]
         marker.getElement().innerHTML = index + 1
     })
+
+    //Recalculamos el contador de puntos
+    updateSpanCounter(arrPointItems.length)
+    
 }
+
 
 init()
