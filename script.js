@@ -3,7 +3,7 @@ const LATITUDE = 42.88235
 const LONGITUDE = -8.54586
 const ZOOM = 13
 const MAXZOOM = 18
-const ICONSIZE = 30
+const ICONSIZE = 25
 const ICONANCHOR = 15
 
 // === Estado ===
@@ -84,7 +84,7 @@ function addPoint(lat, lng) {
     li.innerHTML = `
         <span>${pointCounter}</span>
         <span>${point.getLatLng().lat.toFixed(4)}, ${point.getLatLng().lng.toFixed(4)}</span>
-        <span>🗑️</span>
+        <button class="delete-btn">🗑️</button>
     `
 
     pointList.appendChild(li)

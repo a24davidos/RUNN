@@ -114,3 +114,9 @@ h6 {
 .point-item {
     border: 1px solid black;
 }
+
+.delete-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+}
