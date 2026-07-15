@@ -1,5 +1,4 @@
-"use strict";
-
+'use strict'
 
 // === Configuración ===
 
@@ -24,8 +23,8 @@ let pointDict = {}
 // === Referencias al DOM ===
 let pointList = document.getElementById('point-list')
 let pointItems = pointList.getElementsByTagName('li')
-let spanCounter = document.getElementById('counter')
-
+let spanCounterPoints = document.getElementById('counter')
+let spanCounterKm = document.getElementById('counter-km')
 // let routeLine = L.polyline(
 //     [
 //         [42.882, -8.545],
@@ -92,8 +91,28 @@ function initEvents() {
     })
 }
 
+function formatKm(meters) {
+    if (meters < 1000) {
+        return `${meters} m`
+    } else
+        return (meters / 1000).toLocaleString('es-ES', {
+            style: 'unit',
+            unit: 'kilometer',
+            maximumFractionDigits: 2,
+        })
+}
+
+function setPointNumber(li, marker, number) {
+    li.children[0].innerHTML = number
+    marker.getElement().innerHTML = number
+}
+
+function updateSpanKm(meters) {
+    spanCounterKm.innerText = formatKm(meters)
+}
+
 function updateSpanCounter(count) {
-    spanCounter.innerHTML = count
+    spanCounterPoints.innerHTML = count
 }
 
 function updatePolyLine() {
@@ -114,11 +133,13 @@ function getRouteCoords() {
 }
 
 async function fetchRoute() {
-
     let coords = getRouteCoords()
 
     //Tiene que haber mínimo 2 puntos para hacer una llamada a la Api
-    if (coords.length < 2) return
+    if (coords.length < 2){
+        updateSpanKm(0)
+        return routeLine.setLatLngs([])
+    }    
 
     const str = coords.map((x) => `${x[0]},${x[1]}`).join(';')
 
@@ -134,15 +155,15 @@ async function fetchRoute() {
 
     const data = await response.json()
 
-    console.log(data)
-    
-
     let routeCoords = data.routes[0].geometry.coordinates.map((x) => [
         x[1],
         x[0],
     ])
 
     routeLine.setLatLngs(routeCoords)
+
+    //Actualizo el contador de Km
+    updateSpanKm(data.routes[0].distance)
 }
 
 function addPoint(lat, lng) {
@@ -155,7 +176,7 @@ function addPoint(lat, lng) {
             iconSize: [ICONSIZE, ICONSIZE],
             iconAnchor: [ICONANCHOR, ICONANCHOR],
         }),
-        draggable:true
+        draggable: true,
     })
 
     point.addTo(map)
@@ -163,12 +184,11 @@ function addPoint(lat, lng) {
 
     pointDict[point._leaflet_id] = point
 
-    point.on('dragend', function(e) {
-        let position = point.getLatLng();
+    point.on('dragend', function (e) {
+        let position = point.getLatLng()
         fetchRoute()
         updateLi(point._leaflet_id, position.lat, position.lng)
-    });
-
+    })
 
     let li = document.createElement('li')
     li.classList.add('point-item')
@@ -188,7 +208,6 @@ function addPoint(lat, lng) {
 
     //Calculamos la ruta
     fetchRoute()
-
 }
 
 function deletePoint(e) {
@@ -209,15 +228,14 @@ function deletePoint(e) {
 function recalculatePoints() {
     let arrPointItems = Array.from(pointItems)
 
-    arrPointItems.forEach((item, index) => {
-        item.children[0].innerHTML = index + 1
-        let marker = pointDict[item.dataset.pointId]
-        marker.getElement().innerHTML = index + 1
+    arrPointItems.forEach((li, index) => {
+        setPointNumber(li, pointDict[li.dataset.pointId], index + 1)
     })
 
     //Recalculamos el contador de puntos
     updateSpanCounter(arrPointItems.length)
-    updatePolyLine()
 }
+
+
 
 init()
