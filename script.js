@@ -1,8 +1,8 @@
 'use strict'
 
-// === Configuración ===
+// ==================== Configuración ====================
 
-//Latitude y Longitud por defecto, creo que en los headers puede venir de donde viene una petición así que podría mirar de actualizar eso
+//Latitude y Longitud por defecto (Santiago de Compostela)
 const LATITUDE = 42.88235
 const LONGITUDE = -8.54586
 const ZOOM = 13
@@ -12,7 +12,7 @@ const ICONANCHOR = 15
 const COLOR = 'blue'
 const WEIGHT = 4
 
-// === Estado ===
+// ==================== Estado ====================
 let userPosition = null
 let map = null
 
@@ -20,24 +20,15 @@ let routeLine = L.polyline([], { color: COLOR, weight: WEIGHT })
 
 let pointDict = {}
 
-// === Referencias al DOM ===
+// ==================== Referencias al DOM ====================
 let pointList = document.getElementById('point-list')
 let pointItems = pointList.getElementsByTagName('li')
 let spanCounterPoints = document.getElementById('counter')
 let spanCounterKm = document.getElementById('counter-km')
-// let routeLine = L.polyline(
-//     [
-//         [42.882, -8.545],
-//         [42.883, -8.546],
-//         [42.884, -8.547],
-//     ],
-//     {
-//         color: 'blue',
-//         weight: 4,
-//     }
-// )
 
-// === Eventos ===
+let btnClearRoute = document.getElementById('btn-clear-route')
+
+// ==================== Arranque / Geolocalización ====================
 function init() {
     navigator.geolocation.getCurrentPosition(showPosition, showErrorLocation)
 }
@@ -65,32 +56,7 @@ function onMapClick(e) {
     addPoint(e.latlng.lat, e.latlng.lng)
 }
 
-// === Lógica / Render ===
-function renderMap(lat, lon) {
-    map = L.map('map').setView([lat, lon], ZOOM)
-
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: MAXZOOM,
-        attribution:
-            '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map)
-
-    routeLine.addTo(map)
-
-    initEvents()
-}
-
-function initEvents() {
-    map.on('click', onMapClick)
-
-    //Evento para eliminar puntos
-    pointList.addEventListener('click', (e) => {
-        if (e.target.className == 'delete-btn') {
-            deletePoint(e)
-        }
-    })
-}
-
+// ==================== Utilidades de formato ====================
 function formatKm(meters) {
     if (meters < 1000) {
         return `${meters} m`
@@ -102,6 +68,7 @@ function formatKm(meters) {
         })
 }
 
+// ==================== Actualización de UI ====================
 function setPointNumber(li, marker, number) {
     li.children[0].innerHTML = number
     marker.getElement().innerHTML = number
@@ -115,15 +82,12 @@ function updateSpanCounter(count) {
     spanCounterPoints.innerHTML = count
 }
 
-function updatePolyLine() {
-    routeLine.setLatLngs(getRouteCoords())
-}
-
 function updateLi(id, lat, lng) {
     let target = Array.from(pointItems).find((x) => x.dataset.pointId == id)
     target.children[1].innerText = `${lat.toFixed(4)}, ${lng.toFixed(4)}`
 }
 
+// ==================== Datos de la ruta ====================
 function getRouteCoords() {
     return Array.from(pointItems).map((li) => {
         let marker = pointDict[li.dataset.pointId]
@@ -165,6 +129,38 @@ async function fetchRoute() {
     //Actualizo el contador de Km
     updateSpanKm(data.routes[0].distance)
 }
+
+// ==================== Setup del mapa ====================
+
+function renderMap(lat, lon) {
+    map = L.map('map').setView([lat, lon], ZOOM)
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: MAXZOOM,
+        attribution:
+            '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map)
+
+    routeLine.addTo(map)
+
+    initEvents()
+}
+
+function initEvents() {
+    map.on('click', onMapClick)
+
+    //Evento para eliminar puntos
+    pointList.addEventListener('click', (e) => {
+        if (e.target.className == 'delete-btn') {
+            deletePoint(e)
+        }
+    })
+
+    //Evento para limpiar la ruta
+    btnClearRoute.addEventListener('click', clearRoute)
+}
+
+// ==================== Gestión de puntos ====================
 
 function addPoint(lat, lng) {
     let pointNumber = Object.keys(pointDict).length + 1
@@ -236,6 +232,14 @@ function recalculatePoints() {
     updateSpanCounter(arrPointItems.length)
 }
 
+function clearRoute() {
+    pointList.innerHTML = ''
+    Object.values(pointDict).forEach((marker) => marker.remove())
+    pointDict = {}
 
+    routeLine.setLatLngs([])
+    updateSpanCounter(0)
+    updateSpanKm(0)
+}
 
 init()
