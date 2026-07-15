@@ -12,8 +12,7 @@ const WEIGHT = 4
 let userPosition = null
 let map = null
 
-let routeCords = []
-let routeLine = L.polyline(routeCords, { color: COLOR, weight: WEIGHT })
+let routeLine = L.polyline([], { color: COLOR, weight: WEIGHT })
 
 let pointDict = {}
 
@@ -100,8 +99,36 @@ function getRouteCoords() {
     return Array.from(pointItems).map((li) => {
         let marker = pointDict[li.dataset.pointId]
         let { lat, lng } = marker.getLatLng()
-        return [lat, lng]
+        return [lng, lat]
     })
+}
+
+async function fetchRoute() {
+    let coords = getRouteCoords()
+
+    //Tiene que haber mínimo 2 puntos para hacer una llamada a la Api
+    if (coords.length < 2) return
+
+    const str = coords.map((x) => `${x[0]},${x[1]}`).join(';')
+
+    const response = await fetch(
+        `https://routing.openstreetmap.de/routed-foot/route/v1/foot/${str}?overview=full&geometries=geojson`,
+    )
+
+    if (!response.ok) {
+        //VER COMO CONTROLARLO MAS ADELANTE ⚠️!!!
+        alert('Algo esta fallando en la api')
+        return
+    }
+
+    const data = await response.json()
+
+    let routeCoords = data.routes[0].geometry.coordinates.map((x) => [
+        x[1],
+        x[0],
+    ])
+
+    routeLine.setLatLngs(routeCoords)
 }
 
 function addPoint(lat, lng) {
@@ -135,10 +162,11 @@ function addPoint(lat, lng) {
     //Añadimos a la lista de puntos
     pointList.appendChild(li)
 
-    // Recalculamos PolyLine
-    updatePolyLine()
     //Recalculamos el contador de puntos
     updateSpanCounter(pointNumber)
+
+    //Calculamos la ruta
+    fetchRoute()
 }
 
 function deletePoint(e) {
@@ -153,6 +181,7 @@ function deletePoint(e) {
     delete pointDict[id]
 
     recalculatePoints()
+    fetchRoute()
 }
 
 function recalculatePoints() {
@@ -167,20 +196,6 @@ function recalculatePoints() {
     //Recalculamos el contador de puntos
     updateSpanCounter(arrPointItems.length)
     updatePolyLine()
-}
-
-async function llamadaApi() {
-    const response = await fetch('https://router.project-osrm.org/route/v1/foot/-8.545,42.882;-8.580,42.500?overview=full&geometries=geojson')
-
-    const datos = await response.json()
-
-    console.log(datos.routes[0].geometry.coordinates);
-    
-    let array = datos.routes[0].geometry.coordinates.map((x) => [x[1], x[0]])
-
-    routeLine.setLatLngs(array)
-    
-
 }
 
 init()
