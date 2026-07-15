@@ -104,6 +104,7 @@ function getRouteCoords() {
 }
 
 async function fetchRoute() {
+
     let coords = getRouteCoords()
 
     //Tiene que haber mínimo 2 puntos para hacer una llamada a la Api
@@ -141,6 +142,7 @@ function addPoint(lat, lng) {
             iconSize: [ICONSIZE, ICONSIZE],
             iconAnchor: [ICONANCHOR, ICONANCHOR],
         }),
+        draggable:true
     })
 
     point.addTo(map)
@@ -167,6 +169,13 @@ function addPoint(lat, lng) {
 
     //Calculamos la ruta
     fetchRoute()
+
+    
+    point.on('dragend', function(e) {
+        let position = point.getLatLng();
+        console.log("Nueva posición: " + position.lat + ", " + position.lng);
+        fetchRoute()
+    });
 }
 
 function deletePoint(e) {
