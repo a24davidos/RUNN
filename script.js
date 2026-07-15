@@ -169,4 +169,18 @@ function recalculatePoints() {
     updatePolyLine()
 }
 
+async function llamadaApi() {
+    const response = await fetch('https://router.project-osrm.org/route/v1/foot/-8.545,42.882;-8.580,42.500?overview=full&geometries=geojson')
+
+    const datos = await response.json()
+
+    console.log(datos.routes[0].geometry.coordinates);
+    
+    let array = datos.routes[0].geometry.coordinates.map((x) => [x[1], x[0]])
+
+    routeLine.setLatLngs(array)
+    
+
+}
+
 init()
