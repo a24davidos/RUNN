@@ -18,6 +18,19 @@ let map = null
 
 let routeLine = L.polyline([], { color: COLOR, weight: WEIGHT })
 
+//Aquí guardo los puntos que se dibujan
+let routeGeometry = []
+//Aquí guardo un array de diccionarios
+let measuredRouteGeometry  = []
+// [
+//     {
+//         "lat": 42.898858,
+//         "lng": -8.530336,
+//         "cD": 0
+//     }
+// ]
+
+
 let pointDict = {}
 
 // ==================== Referencias al DOM ====================
@@ -56,7 +69,7 @@ function onMapClick(e) {
     addPoint(e.latlng.lat, e.latlng.lng)
 }
 
-// ==================== Utilidades de formato ====================
+// ==================== Utility ====================
 function formatKm(meters) {
     if (meters < 1000) {
         return `${meters} m`
@@ -102,6 +115,7 @@ async function fetchRoute() {
     //Tiene que haber mínimo 2 puntos para hacer una llamada a la Api
     if (coords.length < 2) {
         updateSpanKm(0)
+        routeGeometry = []
         return routeLine.setLatLngs([])
     }
 
@@ -125,6 +139,7 @@ async function fetchRoute() {
     ])
 
     routeLine.setLatLngs(routeCoords)
+    routeGeometry = routeCoords
 
     //Actualizo el contador de Km
     updateSpanKm(data.routes[0].distance)
@@ -238,8 +253,57 @@ function clearRoute() {
     pointDict = {}
 
     routeLine.setLatLngs([])
+    routeGeometry = []
     updateSpanCounter(0)
     updateSpanKm(0)
+}
+
+// ==================== Elevación ====================
+
+function haversine(lat1, lng1, lat2, lng2) {
+    const R = 6371000
+    const rad = (grados) => (grados * Math.PI) / 180
+
+    const dLat = rad(lat2 - lat1)
+    const dLng = rad(lng2 - lng1)
+
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLng / 2) ** 2
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+
+    return R * c
+}
+
+function calculateCumulativeDistance() {
+    measuredRouteGeometry  = routeGeometry.reduce((acc, currentPoint, i) => {
+        let cumulativeDistance
+
+        if (i === 0) {
+            cumulativeDistance = 0
+        } else {
+            let previousPoint = acc[i - 1]
+            let distance = haversine(
+                previousPoint.lat,
+                previousPoint.lng,
+                currentPoint[0],
+                currentPoint[1]
+            )
+            cumulativeDistance = previousPoint.cD + distance
+        }
+
+        let newPoint = {
+            lat: currentPoint[0],
+            lng: currentPoint[1],
+            cD: cumulativeDistance,
+        }
+
+        return [...acc, newPoint]
+    }, [])
+
+    console.log(measuredRouteGeometry);
+    
 }
 
 init()
