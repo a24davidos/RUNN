@@ -1,4 +1,9 @@
+"use strict";
+
+
 // === Configuración ===
+
+//Latitude y Longitud por defecto, creo que en los headers puede venir de donde viene una petición así que podría mirar de actualizar eso
 const LATITUDE = 42.88235
 const LONGITUDE = -8.54586
 const ZOOM = 13
@@ -95,6 +100,11 @@ function updatePolyLine() {
     routeLine.setLatLngs(getRouteCoords())
 }
 
+function updateLi(id, lat, lng) {
+    let target = Array.from(pointItems).find((x) => x.dataset.pointId == id)
+    target.children[1].innerText = `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+}
+
 function getRouteCoords() {
     return Array.from(pointItems).map((li) => {
         let marker = pointDict[li.dataset.pointId]
@@ -124,6 +134,9 @@ async function fetchRoute() {
 
     const data = await response.json()
 
+    console.log(data)
+    
+
     let routeCoords = data.routes[0].geometry.coordinates.map((x) => [
         x[1],
         x[0],
@@ -149,7 +162,13 @@ function addPoint(lat, lng) {
     point.getElement().dataset.pointId = point._leaflet_id
 
     pointDict[point._leaflet_id] = point
-    console.log(point)
+
+    point.on('dragend', function(e) {
+        let position = point.getLatLng();
+        fetchRoute()
+        updateLi(point._leaflet_id, position.lat, position.lng)
+    });
+
 
     let li = document.createElement('li')
     li.classList.add('point-item')
@@ -170,12 +189,6 @@ function addPoint(lat, lng) {
     //Calculamos la ruta
     fetchRoute()
 
-    
-    point.on('dragend', function(e) {
-        let position = point.getLatLng();
-        console.log("Nueva posición: " + position.lat + ", " + position.lng);
-        fetchRoute()
-    });
 }
 
 function deletePoint(e) {
