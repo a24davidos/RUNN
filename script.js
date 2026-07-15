@@ -5,17 +5,34 @@ const ZOOM = 13
 const MAXZOOM = 18
 const ICONSIZE = 25
 const ICONANCHOR = 15
+const COLOR = 'blue'
+const WEIGHT = 4
 
 // === Estado ===
 let userPosition = null
 let map = null
+
+let routeCords = []
+let routeLine = L.polyline(routeCords, { color: COLOR, weight: WEIGHT })
 
 let pointDict = {}
 
 // === Referencias al DOM ===
 let pointList = document.getElementById('point-list')
 let pointItems = pointList.getElementsByTagName('li')
-let spanCounter = document.getElementById("counter")
+let spanCounter = document.getElementById('counter')
+
+// let routeLine = L.polyline(
+//     [
+//         [42.882, -8.545],
+//         [42.883, -8.546],
+//         [42.884, -8.547],
+//     ],
+//     {
+//         color: 'blue',
+//         weight: 4,
+//     }
+// )
 
 // === Eventos ===
 function init() {
@@ -55,6 +72,8 @@ function renderMap(lat, lon) {
             '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map)
 
+    routeLine.addTo(map)
+
     initEvents()
 }
 
@@ -73,6 +92,17 @@ function updateSpanCounter(count) {
     spanCounter.innerHTML = count
 }
 
+function updatePolyLine() {
+    routeLine.setLatLngs(getRouteCoords())
+}
+
+function getRouteCoords() {
+    return Array.from(pointItems).map((li) => {
+        let marker = pointDict[li.dataset.pointId]
+        let { lat, lng } = marker.getLatLng()
+        return [lat, lng]
+    })
+}
 
 function addPoint(lat, lng) {
     let pointNumber = Object.keys(pointDict).length + 1
@@ -105,6 +135,8 @@ function addPoint(lat, lng) {
     //Añadimos a la lista de puntos
     pointList.appendChild(li)
 
+    // Recalculamos PolyLine
+    updatePolyLine()
     //Recalculamos el contador de puntos
     updateSpanCounter(pointNumber)
 }
@@ -134,8 +166,7 @@ function recalculatePoints() {
 
     //Recalculamos el contador de puntos
     updateSpanCounter(arrPointItems.length)
-    
+    updatePolyLine()
 }
-
 
 init()
