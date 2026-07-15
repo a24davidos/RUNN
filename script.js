@@ -100,10 +100,10 @@ async function fetchRoute() {
     let coords = getRouteCoords()
 
     //Tiene que haber mínimo 2 puntos para hacer una llamada a la Api
-    if (coords.length < 2){
+    if (coords.length < 2) {
         updateSpanKm(0)
         return routeLine.setLatLngs([])
-    }    
+    }
 
     const str = coords.map((x) => `${x[0]},${x[1]}`).join(';')
 
