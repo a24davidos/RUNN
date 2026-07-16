@@ -21,7 +21,7 @@ let routeLine = L.polyline([], { color: COLOR, weight: WEIGHT })
 //Aquí guardo los puntos que se dibujan
 let routeGeometry = []
 //Aquí guardo un array de diccionarios
-let measuredRouteGeometry  = []
+let measuredRouteGeometry = []
 // [
 //     {
 //         "lat": 42.898858,
@@ -29,7 +29,6 @@ let measuredRouteGeometry  = []
 //         "cD": 0
 //     }
 // ]
-
 
 let pointDict = {}
 
@@ -277,7 +276,7 @@ function haversine(lat1, lng1, lat2, lng2) {
 }
 
 function calculateCumulativeDistance() {
-    measuredRouteGeometry  = routeGeometry.reduce((acc, currentPoint, i) => {
+    measuredRouteGeometry = routeGeometry.reduce((acc, currentPoint, i) => {
         let cumulativeDistance
 
         if (i === 0) {
@@ -288,7 +287,7 @@ function calculateCumulativeDistance() {
                 previousPoint.lat,
                 previousPoint.lng,
                 currentPoint[0],
-                currentPoint[1]
+                currentPoint[1],
             )
             cumulativeDistance = previousPoint.cD + distance
         }
@@ -302,7 +301,56 @@ function calculateCumulativeDistance() {
         return [...acc, newPoint]
     }, [])
 
-    console.log(measuredRouteGeometry);
+    // console.log(measuredRouteGeometry)
+}
+
+//Esto nos ayuda a calcular cuantos metros deberíamos dejar entre un punto y otro
+function calculateIntervalPoints() {
+    let idealInterval = Math.round(measuredRouteGeometry.at(-1).cD / 100)
+    let realInterval = Math.max(20, Math.min(50, idealInterval))
+
+    console.log(idealInterval, realInterval)
+
+    return realInterval
+}
+
+//Aquí cogemos los puntos directos de la coordenadas con la que trabajamos, es decir si calculamos que para una ruta X, el intervalo ideal son 50m de distancia entre cada punto, nosotros cogeremos los datos de geometría que ya precalculamos anteriormente en calculateCumulativeDistance, y que guardamos en la variable measuredRouteGeometry. Y de esta manera con la siguiente función cogeremos los puntos que vamos a pedir a nuestra API para calcular los desniveles.
+function calculateSelectedPoints(n) {
+    let data = measuredRouteGeometry.reduce(
+        (acc, currentPoint, i) => {
+            if (currentPoint.cD >= acc.objetivo) {
+                acc.points.push(currentPoint)
+                while (acc.objetivo <= currentPoint.cD) {
+                    acc.objetivo += n
+                }
+            }
+            return acc
+        },
+        { points: [], objetivo: 0 },
+    )
+
+    let lastPoint = measuredRouteGeometry.at(-1)
+    let lastSelectedPoint = data.points.at(-1)
+
+    if (lastPoint.cD - lastSelectedPoint.cD < n / 2) {
+        data.points[data.points.length - 1] = lastPoint
+    } else {
+        data.points.push(lastPoint)
+    }
+
+    // console.log(data.points)
+    return data.points
+}
+
+//Tengo que controlar esto para que no se llame sino hay puntos, o una ruta dibujada
+function calculateElevation() {
+    calculateCumulativeDistance()
+    // let interval = calculateIntervalPoints()
+    let dataPoints = calculateSelectedPoints(calculateIntervalPoints())
+    
+    let pru = { "locations": dataPoints.map((x) => ({ "latitude": x.lat, "longitude": x.lng })) }
+
+    console.log(pru);
     
 }
 
