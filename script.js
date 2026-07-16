@@ -39,7 +39,7 @@ let spanCounterPoints = document.getElementById('counter')
 let spanCounterKm = document.getElementById('counter-km')
 
 let btnClearRoute = document.getElementById('btn-clear-route')
-
+let btnElevation = document.getElementById('btn-elevation')
 // ==================== Arranque / Geolocalización ====================
 function init() {
     navigator.geolocation.getCurrentPosition(showPosition, showErrorLocation)
@@ -170,8 +170,10 @@ function initEvents() {
         }
     })
 
-    //Evento para limpiar la ruta
+    //Botón para limpiar la ruta
     btnClearRoute.addEventListener('click', clearRoute)
+    //Botón para calcular la elevación
+    btnElevation.addEventListener('click', calculateElevation)
 }
 
 // ==================== Gestión de puntos ====================
@@ -344,6 +346,9 @@ function calculateSelectedPoints(n) {
 
 //Tengo que controlar esto para que no se llame sino hay puntos, o una ruta dibujada
 async function calculateElevation() {
+    //No se puede calcular la elevación de algo que no hay dibujado
+    if (routeGeometry.length == 0) return
+
     calculateCumulativeDistance()
     // let interval = calculateIntervalPoints()
     let dataPoints = calculateSelectedPoints(calculateIntervalPoints())
@@ -352,24 +357,25 @@ async function calculateElevation() {
     // let openElevation = { "locations": dataPoints.map((x) => ({ "latitude": x.lat, "longitude": x.lng })) }
 
     //Asi se preparan los datos para Open-Meteo
-    let longitude = dataPoints.map((x) => x.lng).join(",")
-    let latitude = dataPoints.map((x) => x.lat).join(",")
-    
-    let pruebas = await fetchElevation(longitude, latitude)
-    
-    console.log(pruebas);
-    
+    let longitude = dataPoints.map((x) => x.lng).join(',')
+    let latitude = dataPoints.map((x) => x.lat).join(',')
+
+    let fetchedElevation = await fetchElevation(longitude, latitude)
+
+    let prueba = dataPoints.map((x, index) => {
+        return {
+            lat: x.lat,
+            lng: x.lng,
+            cD: x.cD,
+            elevation: fetchedElevation[index],
+        }
+    })
+
+    console.log(prueba)
 }
 
 async function fetchElevation(longitude, latitude) {
-    let coords = getRouteCoords()
-
-    //Tiene que haber mínimo 2 puntos para hacer una llamada a la Api
-    if (coords.length < 2) {
-        updateSpanKm(0)
-        routeGeometry = []
-        return routeLine.setLatLngs([])
-    }
+    if (longitude == '' || latitude == '') return
 
     const response = await fetch(
         `https://api.open-meteo.com/v1/elevation?latitude=${latitude}&longitude=${longitude}`,
@@ -380,11 +386,9 @@ async function fetchElevation(longitude, latitude) {
         alert('Algo esta fallando en la api')
         return
     }
-
     const data = await response.json()
 
-    console.log(data);
+    return data.elevation
 }
-
 
 init()
