@@ -343,15 +343,48 @@ function calculateSelectedPoints(n) {
 }
 
 //Tengo que controlar esto para que no se llame sino hay puntos, o una ruta dibujada
-function calculateElevation() {
+async function calculateElevation() {
     calculateCumulativeDistance()
     // let interval = calculateIntervalPoints()
     let dataPoints = calculateSelectedPoints(calculateIntervalPoints())
-    
-    let pru = { "locations": dataPoints.map((x) => ({ "latitude": x.lat, "longitude": x.lng })) }
 
-    console.log(pru);
+    //Así se preparan los datos para Open-Elevation 🌍
+    // let openElevation = { "locations": dataPoints.map((x) => ({ "latitude": x.lat, "longitude": x.lng })) }
+
+    //Asi se preparan los datos para Open-Meteo
+    let longitude = dataPoints.map((x) => x.lng).join(",")
+    let latitude = dataPoints.map((x) => x.lat).join(",")
+    
+    let pruebas = await fetchElevation(longitude, latitude)
+    
+    console.log(pruebas);
     
 }
+
+async function fetchElevation(longitude, latitude) {
+    let coords = getRouteCoords()
+
+    //Tiene que haber mínimo 2 puntos para hacer una llamada a la Api
+    if (coords.length < 2) {
+        updateSpanKm(0)
+        routeGeometry = []
+        return routeLine.setLatLngs([])
+    }
+
+    const response = await fetch(
+        `https://api.open-meteo.com/v1/elevation?latitude=${latitude}&longitude=${longitude}`,
+    )
+
+    if (!response.ok) {
+        //VER COMO CONTROLARLO MAS ADELANTE ⚠️!!!
+        alert('Algo esta fallando en la api')
+        return
+    }
+
+    const data = await response.json()
+
+    console.log(data);
+}
+
 
 init()
