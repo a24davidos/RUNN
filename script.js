@@ -12,8 +12,8 @@ const ICONANCHOR = 15
 const COLOR = 'blue'
 const WEIGHT = 4
 
-const UMBRAL_METROS = 5
-
+const RUN_THRESHOLD = 8
+const MAX_SLOPE = 35
 // ==================== Estado ====================
 let userPosition = null
 let map = null
@@ -22,372 +22,13 @@ let routeLine = L.polyline([], { color: COLOR, weight: WEIGHT })
 
 //Aquí guardo los puntos que se dibujan
 let routeGeometry = []
-//Aquí guardo un array de diccionarios
-let measuredRouteGeometry = []
-// [
-//     {
-//         "lat": 42.898858,
-//         "lng": -8.530336,
-//         "cD": 0
-//     }
-// ]
 
 let pointDict = {}
-
-let datosSim = [
-    {
-        lat: 42.887025,
-        lng: -8.547616,
-        cD: 0,
-        elevation: 233,
-    },
-    {
-        lat: 42.886886,
-        lng: -8.54771,
-        cD: 22.26273523046138,
-        elevation: 233,
-    },
-    {
-        lat: 42.886733,
-        lng: -8.547744,
-        cD: 43.487846544478984,
-        elevation: 233,
-    },
-    {
-        lat: 42.886576,
-        lng: -8.547789,
-        cD: 61.35081256440578,
-        elevation: 234,
-    },
-    {
-        lat: 42.886393,
-        lng: -8.547809,
-        cD: 81.76706041835023,
-        elevation: 234,
-    },
-    {
-        lat: 42.886114,
-        lng: -8.547795,
-        cD: 112.82934594571715,
-        elevation: 234,
-    },
-    {
-        lat: 42.885838,
-        lng: -8.54777,
-        cD: 143.58666253729857,
-        elevation: 234,
-    },
-    {
-        lat: 42.885663,
-        lng: -8.547688,
-        cD: 169.08282414415913,
-        elevation: 232,
-    },
-    {
-        lat: 42.885483,
-        lng: -8.547686,
-        cD: 189.10901894211176,
-        elevation: 232,
-    },
-    {
-        lat: 42.885253,
-        lng: -8.547751,
-        cD: 215.22640693688973,
-        elevation: 232,
-    },
-    {
-        lat: 42.884537,
-        lng: -8.548134,
-        cD: 300.7388976870891,
-        elevation: 228,
-    },
-    {
-        lat: 42.884373,
-        lng: -8.548278,
-        cD: 323.7978964055548,
-        elevation: 228,
-    },
-    {
-        lat: 42.884103,
-        lng: -8.548315,
-        cD: 353.9971219852428,
-        elevation: 228,
-    },
-    {
-        lat: 42.88393,
-        lng: -8.548357,
-        cD: 373.53584155138515,
-        elevation: 228,
-    },
-    {
-        lat: 42.883638,
-        lng: -8.548429,
-        cD: 406.53045051775825,
-        elevation: 228,
-    },
-    {
-        lat: 42.883361,
-        lng: -8.548498,
-        cD: 437.8404048143519,
-        elevation: 228,
-    },
-    {
-        lat: 42.883295,
-        lng: -8.548519,
-        cD: 445.38034937173694,
-        elevation: 229,
-    },
-    {
-        lat: 42.883046,
-        lng: -8.548602,
-        cD: 473.88179926149576,
-        elevation: 229,
-    },
-    {
-        lat: 42.882807,
-        lng: -8.5487,
-        cD: 501.6340599159045,
-        elevation: 229,
-    },
-    {
-        lat: 42.882491,
-        lng: -8.548857,
-        cD: 541.2749259803196,
-        elevation: 229,
-    },
-    {
-        lat: 42.88229,
-        lng: -8.548916,
-        cD: 565.6217439318424,
-        elevation: 229,
-    },
-    {
-        lat: 42.881957,
-        lng: -8.54905,
-        cD: 604.225784789947,
-        elevation: 229,
-    },
-    {
-        lat: 42.881838,
-        lng: -8.549141,
-        cD: 621.0536571451611,
-        elevation: 229,
-    },
-    {
-        lat: 42.881648,
-        lng: -8.549136,
-        cD: 644.7188683315961,
-        elevation: 230,
-    },
-    {
-        lat: 42.881248,
-        lng: -8.549335,
-        cD: 694.5061417739701,
-        elevation: 227,
-    },
-    {
-        lat: 42.880934,
-        lng: -8.549453,
-        cD: 732.516646038704,
-        elevation: 227,
-    },
-    {
-        lat: 42.880734,
-        lng: -8.549544,
-        cD: 755.9591383622775,
-        elevation: 233,
-    },
-    {
-        lat: 42.880673,
-        lng: -8.549573,
-        cD: 763.1418306867696,
-        elevation: 233,
-    },
-    {
-        lat: 42.880579,
-        lng: -8.549622,
-        cD: 781.0368466118535,
-        elevation: 233,
-    },
-    {
-        lat: 42.880445,
-        lng: -8.549749,
-        cD: 800.4987695320732,
-        elevation: 233,
-    },
-    {
-        lat: 42.880337,
-        lng: -8.550129,
-        cD: 837.330021937869,
-        elevation: 233,
-    },
-    {
-        lat: 42.880325,
-        lng: -8.550187,
-        cD: 842.240682910294,
-        elevation: 233,
-    },
-    {
-        lat: 42.880127,
-        lng: -8.550213,
-        cD: 873.4039434669354,
-        elevation: 233,
-    },
-    {
-        lat: 42.880008,
-        lng: -8.550135,
-        cD: 890.0421874544782,
-        elevation: 233,
-    },
-    {
-        lat: 42.879582,
-        lng: -8.550022,
-        cD: 938.2993011258504,
-        elevation: 239,
-    },
-    {
-        lat: 42.879566,
-        lng: -8.550018,
-        cD: 940.1080280115109,
-        elevation: 239,
-    },
-    {
-        lat: 42.879011,
-        lng: -8.549874,
-        cD: 1002.9267462774725,
-        elevation: 254,
-    },
-    {
-        lat: 42.878846,
-        lng: -8.549988,
-        cD: 1027.6535866183729,
-        elevation: 254,
-    },
-    {
-        lat: 42.878818,
-        lng: -8.55014,
-        cD: 1041.3252196423098,
-        elevation: 244,
-    },
-    {
-        lat: 42.878673,
-        lng: -8.550426,
-        cD: 1069.6707231042149,
-        elevation: 244,
-    },
-    {
-        lat: 42.878559,
-        lng: -8.550663,
-        cD: 1092.7714924024945,
-        elevation: 244,
-    },
-    {
-        lat: 42.878479,
-        lng: -8.550768,
-        cD: 1105.113802571416,
-        elevation: 244,
-    },
-    {
-        lat: 42.878368,
-        lng: -8.550732,
-        cD: 1121.3024865516634,
-        elevation: 244,
-    },
-    {
-        lat: 42.878237,
-        lng: -8.550886,
-        cD: 1140.875510201174,
-        elevation: 244,
-    },
-    {
-        lat: 42.878129,
-        lng: -8.551083,
-        cD: 1160.9295284111245,
-        elevation: 244,
-    },
-    {
-        lat: 42.877544,
-        lng: -8.551382,
-        cD: 1230.537111898331,
-        elevation: 244,
-    },
-    {
-        lat: 42.877425,
-        lng: -8.551377,
-        cD: 1243.878632077848,
-        elevation: 246,
-    },
-    {
-        lat: 42.877177,
-        lng: -8.551358,
-        cD: 1272.7215925862502,
-        elevation: 246,
-    },
-    {
-        lat: 42.876498,
-        lng: -8.550762,
-        cD: 1362.4940818721643,
-        elevation: 252,
-    },
-    {
-        lat: 42.876147,
-        lng: -8.550631,
-        cD: 1412.274606431978,
-        elevation: 252,
-    },
-    {
-        lat: 42.876067,
-        lng: -8.550562,
-        cD: 1422.7981564149427,
-        elevation: 252,
-    },
-    {
-        lat: 42.875656,
-        lng: -8.5502,
-        cD: 1477.1991854186497,
-        elevation: 249,
-    },
-    {
-        lat: 42.875612,
-        lng: -8.550158,
-        cD: 1483.1706359673783,
-        elevation: 249,
-    },
-    {
-        lat: 42.875465,
-        lng: -8.55019,
-        cD: 1509.0839985511504,
-        elevation: 249,
-    },
-    {
-        lat: 42.87541,
-        lng: -8.550313,
-        cD: 1520.8254554183686,
-        elevation: 249,
-    },
-    {
-        lat: 42.875113,
-        lng: -8.550031,
-        cD: 1561.0585611668578,
-        elevation: 249,
-    },
-    {
-        lat: 42.874625,
-        lng: -8.550755,
-        cD: 1641.2158472475458,
-        elevation: 246,
-    },
-    {
-        lat: 42.874465,
-        lng: -8.550959,
-        cD: 1665.5839141277688,
-        elevation: 245,
-    },
-]
 
 // ==================== Referencias al DOM ====================
 let pointList = document.getElementById('point-list')
 let pointItems = pointList.getElementsByTagName('li')
+
 let spanCounterPoints = document.getElementById('counter')
 let spanCounterKm = document.getElementById('counter-km')
 
@@ -614,24 +255,39 @@ function clearRoute() {
 
 // ==================== Elevación ====================
 
-function haversine(lat1, lng1, lat2, lng2) {
-    const R = 6371000
-    const rad = (grados) => (grados * Math.PI) / 180
+// Calcula el desnivel del inicio al final de la ruta
+async function calculateElevation() {
+    //No se puede calcular la elevación de algo que no hay dibujado
+    if (routeGeometry.length == 0) return
 
-    const dLat = rad(lat2 - lat1)
-    const dLng = rad(lng2 - lng1)
+    let measured = calculateCumulativeDistance()
+    let interval = calculateIntervalPoints(measured)
+    let dataPoints = calculateSelectedPoints(measured, interval)
 
-    const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLng / 2) ** 2
+    //Open-Meteo espera dos listas separadas por comas: latitudes y longitudes
+    let latitude = dataPoints.map((x) => x.lat).join(',')
+    let longitude = dataPoints.map((x) => x.lng).join(',')
 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    let fetchedElevation = await fetchElevation(latitude, longitude)
 
-    return R * c
+    let elevationDict = dataPoints.map((x, index) => {
+        return {
+            lat: x.lat,
+            lng: x.lng,
+            cD: x.cD,
+            elevation: fetchedElevation[index],
+        }
+    })
+
+    let resultado = calculateElevationChange(elevationDict)
+
+    console.log(resultado);
+    return resultado
+    
 }
 
 function calculateCumulativeDistance() {
-    measuredRouteGeometry = routeGeometry.reduce((acc, currentPoint, i) => {
+    return routeGeometry.reduce((acc, currentPoint, i) => {
         let cumulativeDistance
 
         if (i === 0) {
@@ -655,36 +311,49 @@ function calculateCumulativeDistance() {
 
         return [...acc, newPoint]
     }, [])
+}
 
-    // console.log(measuredRouteGeometry)
+//Distancia real entre dos coordenadas (en metros), la usa calculateCumulativeDistance
+function haversine(lat1, lng1, lat2, lng2) {
+    const R = 6371000
+    const rad = (grados) => (grados * Math.PI) / 180
+
+    const dLat = rad(lat2 - lat1)
+    const dLng = rad(lng2 - lng1)
+
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLng / 2) ** 2
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+
+    return R * c
 }
 
 //Esto nos ayuda a calcular cuantos metros deberíamos dejar entre un punto y otro
-function calculateIntervalPoints() {
-    let idealInterval = Math.round(measuredRouteGeometry.at(-1).cD / 100)
+function calculateIntervalPoints(measured) {
+    let idealInterval = Math.round(measured.at(-1).cD / 100)
     let realInterval = Math.max(20, Math.min(50, idealInterval))
-
-    console.log(idealInterval, realInterval)
 
     return realInterval
 }
 
-//Aquí cogemos los puntos directos de la coordenadas con la que trabajamos, es decir si calculamos que para una ruta X, el intervalo ideal son 50m de distancia entre cada punto, nosotros cogeremos los datos de geometría que ya precalculamos anteriormente en calculateCumulativeDistance, y que guardamos en la variable measuredRouteGeometry. Y de esta manera con la siguiente función cogeremos los puntos que vamos a pedir a nuestra API para calcular los desniveles.
-function calculateSelectedPoints(n) {
-    let data = measuredRouteGeometry.reduce(
+//Aquí cogemos los puntos directos de la coordenadas con la que trabajamos, es decir si calculamos que para una ruta X, el intervalo ideal son 50m de distancia entre cada punto, nosotros cogeremos los datos de geometría (measured) que ya precalculamos anteriormente en calculateCumulativeDistance. Y de esta manera con la siguiente función cogeremos los puntos que vamos a pedir a nuestra API para calcular los desniveles.
+function calculateSelectedPoints(measured, n) {
+    let data = measured.reduce(
         (acc, currentPoint, i) => {
-            if (currentPoint.cD >= acc.objetivo) {
+            if (currentPoint.cD >= acc.target) {
                 acc.points.push(currentPoint)
-                while (acc.objetivo <= currentPoint.cD) {
-                    acc.objetivo += n
+                while (acc.target <= currentPoint.cD) {
+                    acc.target += n
                 }
             }
             return acc
         },
-        { points: [], objetivo: 0 },
+        { points: [], target: 0 },
     )
 
-    let lastPoint = measuredRouteGeometry.at(-1)
+    let lastPoint = measured.at(-1)
     let lastSelectedPoint = data.points.at(-1)
 
     if (lastPoint.cD - lastSelectedPoint.cD < n / 2) {
@@ -697,40 +366,11 @@ function calculateSelectedPoints(n) {
     return data.points
 }
 
-async function calculateElevation() {
-    //No se puede calcular la elevación de algo que no hay dibujado
-    if (routeGeometry.length == 0) return
-
-    calculateCumulativeDistance()
-    // let interval = calculateIntervalPoints()
-    let dataPoints = calculateSelectedPoints(calculateIntervalPoints())
-
-    //Así se preparan los datos para Open-Elevation 🌍
-    // let openElevation = { "locations": dataPoints.map((x) => ({ "latitude": x.lat, "longitude": x.lng })) }
-
-    //Asi se preparan los datos para Open-Meteo
-    let longitude = dataPoints.map((x) => x.lng).join(',')
-    let latitude = dataPoints.map((x) => x.lat).join(',')
-
-    let fetchedElevation = await fetchElevation(longitude, latitude)
-
-    let elevationDict = dataPoints.map((x, index) => {
-        return {
-            lat: x.lat,
-            lng: x.lng,
-            cD: x.cD,
-            elevation: fetchedElevation[index],
-        }
-    })
-
-    calculateSlopeHeight(elevationDict)
-}
-
-async function fetchElevation(longitude, latitude) {
-    if (longitude == '' || latitude == '') return
+async function fetchElevation(locations) {
+    if (locations == '') return
 
     const response = await fetch(
-        `https://api.open-meteo.com/v1/elevation?latitude=${latitude}&longitude=${longitude}`,
+        `https://api.opentopodata.org/v1/eudem25m?locations=${locations}`,
     )
 
     if (!response.ok) {
@@ -740,77 +380,106 @@ async function fetchElevation(longitude, latitude) {
     }
     const data = await response.json()
 
-    return data.elevation
+    //Open Topo Data devuelve results[].elevation, lo aplano para dejarlo como antes
+    return data.results.map((x) => x.elevation)
 }
 
-function calculateSlopeHeight(data) {
-    let datos = datosSim
-    console.log(datos)
+// Función de seguridad: si entre un punto y el siguiente hay una pendiente
+// mayor al MAX_SLOPE (%), probablemente sea un error del dataset de elevación,
+// así que sustituimos ese valor por uno interpolado entre sus vecinos.
+function filterUnrealisticSlopes(data) {
+    return data.map((point, i) => {
+        if (i == 0) {
+            return point
+        } else if (i == data.length - 1) {
+            return point
+        } else {
+            let elevationDiff = point.elevation - data[i - 1].elevation
+            let distanceDiff = point.cD - data[i - 1].cD
 
+            let slope = (elevationDiff / distanceDiff) * 100
+
+            if (Math.abs(slope) < MAX_SLOPE) {
+                return point
+            } else {
+                let t =
+                    (point.cD - data[i - 1].cD) /
+                    (data[i + 1].cD - data[i - 1].cD)
+                let interpolatedElevation =
+                    data[i - 1].elevation +
+                    t * (data[i + 1].elevation - data[i - 1].elevation)
+                return { ...point, elevation: interpolatedElevation }
+            }
+        }
+    })
+}
+
+function calculateElevationChange(data) {
     // Suavizado: cada punto pasa a ser el promedio con sus vecinos.
     // Ej: 254, 253, 256, 254 -> los saltos pequeños se diluyen y
     // solo sobreviven las subidas/bajadas sostenidas del terreno.
-    let datosSuavizados = datos.map((x, i) => {
+
+    let cleanedData = filterUnrealisticSlopes(data)
+
+    let smoothedData = cleanedData.map((x, i) => {
         x = x.elevation
 
         if (i == 0) {
-            return (x + datos[i + 1].elevation) / 2
-        } else if (i == datos.length - 1) {
-            return (x + datos[i - 1].elevation) / 2
+            return (x + cleanedData[i + 1].elevation) / 2
+        } else if (i == cleanedData.length - 1) {
+            return (x + cleanedData[i - 1].elevation) / 2
         } else {
-            return (datos[i - 1].elevation + x + datos[i + 1].elevation) / 3
+            return (
+                (cleanedData[i - 1].elevation +
+                    x +
+                    cleanedData[i + 1].elevation) /
+                3
+            )
         }
     })
 
-    // Agrupa el desnivel en "rachas": mientras la diferencia siga el mismo
-    // signo, se acumula. Al cambiar de sentido, se cierra la racha y solo
-    // cuenta si supera UMBRAL_METROS.
-    // Ej: racha de +12m -> se suma a subidaTotal; racha de +3m -> se descarta.
-    let calculo = datosSuavizados.reduce(
+    // Agrupo el desnivel en "rachas" (run): mientras la diferencia siga el mismo signo, se acumula.
+    // Al cambiar de sentido, se cierra la racha y solo cuenta si supera RUN_THRESHOLD.
+    // Ej: run de +12m -> se suma a totalGain; run de +3m -> se descarta.
+    let result = smoothedData.reduce(
         (acc, current, i) => {
             if (i == 0) {
-                acc.anterior = current
+                acc.previous = current
             } else {
-                let diferencia = current - acc.anterior
+                let diff = current - acc.previous
 
-                if (
-                    Math.sign(diferencia) === Math.sign(acc.racha) &&
-                    diferencia != 0
-                ) {
+                if (Math.sign(diff) === Math.sign(acc.run) && diff != 0) {
                     // Si la diferencia es distinta de cero y ademas tienen el mismo signo, sumamos a la racha
-                    acc.racha += diferencia
+                    acc.run += diff
                 } else if (
                     //Si la diferencia y la racha tienen distinto signo, y la diferencia es distinta de 0 quiere decir que hubo un cambio en la elevación, por tanto se rompe la racha
-                    Math.sign(diferencia) !== Math.sign(acc.racha) &&
-                    diferencia !== 0
+                    Math.sign(diff) !== Math.sign(acc.run) &&
+                    diff !== 0
                 ) {
-                    if (acc.racha > UMBRAL_METROS) {
-                        acc.subidaTotal += acc.racha
-                    } else if (acc.racha < -UMBRAL_METROS)
-                        acc.bajadaTotal += Math.abs(acc.racha)
+                    if (acc.run > RUN_THRESHOLD) {
+                        acc.totalGain += acc.run
+                    } else if (acc.run < -RUN_THRESHOLD)
+                        acc.totalLoss += Math.abs(acc.run)
 
-                    acc.racha = diferencia
+                    acc.run = diff
                 }
             }
-            acc.anterior = current
+            acc.previous = current
             return acc
         },
-        { subidaTotal: 0, bajadaTotal: 0, racha: 0, anterior: 0 },
+        { totalGain: 0, totalLoss: 0, run: 0, previous: 0 },
     )
 
-    if (calculo.racha > UMBRAL_METROS) {
-        calculo.subidaTotal += calculo.racha
-    } else if (calculo.racha < -UMBRAL_METROS) {
-        calculo.bajadaTotal += Math.abs(calculo.racha)
+    if (result.run > RUN_THRESHOLD) {
+        result.totalGain += result.run
+    } else if (result.run < -RUN_THRESHOLD) {
+        result.totalLoss += Math.abs(result.run)
     }
 
-    calculo = {
-        subidaTotal: Math.round(calculo.subidaTotal),
-        bajadaTotal: Math.round(calculo.bajadaTotal),
+    return result = {
+        totalGain: Math.round(result.totalGain),
+        totalLoss: Math.round(result.totalLoss),
     }
-
-    console.log(datosSuavizados)
-    console.log(calculo)
 }
 
 init()
