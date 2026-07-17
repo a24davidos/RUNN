@@ -12,6 +12,8 @@ const ICONANCHOR = 15
 const COLOR = 'blue'
 const WEIGHT = 4
 
+const UMBRAL_METROS = 5
+
 // ==================== Estado ====================
 let userPosition = null
 let map = null
@@ -31,6 +33,357 @@ let measuredRouteGeometry = []
 // ]
 
 let pointDict = {}
+
+let datosSim = [
+    {
+        lat: 42.887025,
+        lng: -8.547616,
+        cD: 0,
+        elevation: 233,
+    },
+    {
+        lat: 42.886886,
+        lng: -8.54771,
+        cD: 22.26273523046138,
+        elevation: 233,
+    },
+    {
+        lat: 42.886733,
+        lng: -8.547744,
+        cD: 43.487846544478984,
+        elevation: 233,
+    },
+    {
+        lat: 42.886576,
+        lng: -8.547789,
+        cD: 61.35081256440578,
+        elevation: 234,
+    },
+    {
+        lat: 42.886393,
+        lng: -8.547809,
+        cD: 81.76706041835023,
+        elevation: 234,
+    },
+    {
+        lat: 42.886114,
+        lng: -8.547795,
+        cD: 112.82934594571715,
+        elevation: 234,
+    },
+    {
+        lat: 42.885838,
+        lng: -8.54777,
+        cD: 143.58666253729857,
+        elevation: 234,
+    },
+    {
+        lat: 42.885663,
+        lng: -8.547688,
+        cD: 169.08282414415913,
+        elevation: 232,
+    },
+    {
+        lat: 42.885483,
+        lng: -8.547686,
+        cD: 189.10901894211176,
+        elevation: 232,
+    },
+    {
+        lat: 42.885253,
+        lng: -8.547751,
+        cD: 215.22640693688973,
+        elevation: 232,
+    },
+    {
+        lat: 42.884537,
+        lng: -8.548134,
+        cD: 300.7388976870891,
+        elevation: 228,
+    },
+    {
+        lat: 42.884373,
+        lng: -8.548278,
+        cD: 323.7978964055548,
+        elevation: 228,
+    },
+    {
+        lat: 42.884103,
+        lng: -8.548315,
+        cD: 353.9971219852428,
+        elevation: 228,
+    },
+    {
+        lat: 42.88393,
+        lng: -8.548357,
+        cD: 373.53584155138515,
+        elevation: 228,
+    },
+    {
+        lat: 42.883638,
+        lng: -8.548429,
+        cD: 406.53045051775825,
+        elevation: 228,
+    },
+    {
+        lat: 42.883361,
+        lng: -8.548498,
+        cD: 437.8404048143519,
+        elevation: 228,
+    },
+    {
+        lat: 42.883295,
+        lng: -8.548519,
+        cD: 445.38034937173694,
+        elevation: 229,
+    },
+    {
+        lat: 42.883046,
+        lng: -8.548602,
+        cD: 473.88179926149576,
+        elevation: 229,
+    },
+    {
+        lat: 42.882807,
+        lng: -8.5487,
+        cD: 501.6340599159045,
+        elevation: 229,
+    },
+    {
+        lat: 42.882491,
+        lng: -8.548857,
+        cD: 541.2749259803196,
+        elevation: 229,
+    },
+    {
+        lat: 42.88229,
+        lng: -8.548916,
+        cD: 565.6217439318424,
+        elevation: 229,
+    },
+    {
+        lat: 42.881957,
+        lng: -8.54905,
+        cD: 604.225784789947,
+        elevation: 229,
+    },
+    {
+        lat: 42.881838,
+        lng: -8.549141,
+        cD: 621.0536571451611,
+        elevation: 229,
+    },
+    {
+        lat: 42.881648,
+        lng: -8.549136,
+        cD: 644.7188683315961,
+        elevation: 230,
+    },
+    {
+        lat: 42.881248,
+        lng: -8.549335,
+        cD: 694.5061417739701,
+        elevation: 227,
+    },
+    {
+        lat: 42.880934,
+        lng: -8.549453,
+        cD: 732.516646038704,
+        elevation: 227,
+    },
+    {
+        lat: 42.880734,
+        lng: -8.549544,
+        cD: 755.9591383622775,
+        elevation: 233,
+    },
+    {
+        lat: 42.880673,
+        lng: -8.549573,
+        cD: 763.1418306867696,
+        elevation: 233,
+    },
+    {
+        lat: 42.880579,
+        lng: -8.549622,
+        cD: 781.0368466118535,
+        elevation: 233,
+    },
+    {
+        lat: 42.880445,
+        lng: -8.549749,
+        cD: 800.4987695320732,
+        elevation: 233,
+    },
+    {
+        lat: 42.880337,
+        lng: -8.550129,
+        cD: 837.330021937869,
+        elevation: 233,
+    },
+    {
+        lat: 42.880325,
+        lng: -8.550187,
+        cD: 842.240682910294,
+        elevation: 233,
+    },
+    {
+        lat: 42.880127,
+        lng: -8.550213,
+        cD: 873.4039434669354,
+        elevation: 233,
+    },
+    {
+        lat: 42.880008,
+        lng: -8.550135,
+        cD: 890.0421874544782,
+        elevation: 233,
+    },
+    {
+        lat: 42.879582,
+        lng: -8.550022,
+        cD: 938.2993011258504,
+        elevation: 239,
+    },
+    {
+        lat: 42.879566,
+        lng: -8.550018,
+        cD: 940.1080280115109,
+        elevation: 239,
+    },
+    {
+        lat: 42.879011,
+        lng: -8.549874,
+        cD: 1002.9267462774725,
+        elevation: 254,
+    },
+    {
+        lat: 42.878846,
+        lng: -8.549988,
+        cD: 1027.6535866183729,
+        elevation: 254,
+    },
+    {
+        lat: 42.878818,
+        lng: -8.55014,
+        cD: 1041.3252196423098,
+        elevation: 244,
+    },
+    {
+        lat: 42.878673,
+        lng: -8.550426,
+        cD: 1069.6707231042149,
+        elevation: 244,
+    },
+    {
+        lat: 42.878559,
+        lng: -8.550663,
+        cD: 1092.7714924024945,
+        elevation: 244,
+    },
+    {
+        lat: 42.878479,
+        lng: -8.550768,
+        cD: 1105.113802571416,
+        elevation: 244,
+    },
+    {
+        lat: 42.878368,
+        lng: -8.550732,
+        cD: 1121.3024865516634,
+        elevation: 244,
+    },
+    {
+        lat: 42.878237,
+        lng: -8.550886,
+        cD: 1140.875510201174,
+        elevation: 244,
+    },
+    {
+        lat: 42.878129,
+        lng: -8.551083,
+        cD: 1160.9295284111245,
+        elevation: 244,
+    },
+    {
+        lat: 42.877544,
+        lng: -8.551382,
+        cD: 1230.537111898331,
+        elevation: 244,
+    },
+    {
+        lat: 42.877425,
+        lng: -8.551377,
+        cD: 1243.878632077848,
+        elevation: 246,
+    },
+    {
+        lat: 42.877177,
+        lng: -8.551358,
+        cD: 1272.7215925862502,
+        elevation: 246,
+    },
+    {
+        lat: 42.876498,
+        lng: -8.550762,
+        cD: 1362.4940818721643,
+        elevation: 252,
+    },
+    {
+        lat: 42.876147,
+        lng: -8.550631,
+        cD: 1412.274606431978,
+        elevation: 252,
+    },
+    {
+        lat: 42.876067,
+        lng: -8.550562,
+        cD: 1422.7981564149427,
+        elevation: 252,
+    },
+    {
+        lat: 42.875656,
+        lng: -8.5502,
+        cD: 1477.1991854186497,
+        elevation: 249,
+    },
+    {
+        lat: 42.875612,
+        lng: -8.550158,
+        cD: 1483.1706359673783,
+        elevation: 249,
+    },
+    {
+        lat: 42.875465,
+        lng: -8.55019,
+        cD: 1509.0839985511504,
+        elevation: 249,
+    },
+    {
+        lat: 42.87541,
+        lng: -8.550313,
+        cD: 1520.8254554183686,
+        elevation: 249,
+    },
+    {
+        lat: 42.875113,
+        lng: -8.550031,
+        cD: 1561.0585611668578,
+        elevation: 249,
+    },
+    {
+        lat: 42.874625,
+        lng: -8.550755,
+        cD: 1641.2158472475458,
+        elevation: 246,
+    },
+    {
+        lat: 42.874465,
+        lng: -8.550959,
+        cD: 1665.5839141277688,
+        elevation: 245,
+    },
+]
 
 // ==================== Referencias al DOM ====================
 let pointList = document.getElementById('point-list')
@@ -344,7 +697,6 @@ function calculateSelectedPoints(n) {
     return data.points
 }
 
-//Tengo que controlar esto para que no se llame sino hay puntos, o una ruta dibujada
 async function calculateElevation() {
     //No se puede calcular la elevación de algo que no hay dibujado
     if (routeGeometry.length == 0) return
@@ -362,7 +714,7 @@ async function calculateElevation() {
 
     let fetchedElevation = await fetchElevation(longitude, latitude)
 
-    let prueba = dataPoints.map((x, index) => {
+    let elevationDict = dataPoints.map((x, index) => {
         return {
             lat: x.lat,
             lng: x.lng,
@@ -371,7 +723,7 @@ async function calculateElevation() {
         }
     })
 
-    console.log(prueba)
+    calculateSlopeHeight(elevationDict)
 }
 
 async function fetchElevation(longitude, latitude) {
@@ -389,6 +741,76 @@ async function fetchElevation(longitude, latitude) {
     const data = await response.json()
 
     return data.elevation
+}
+
+function calculateSlopeHeight(data) {
+    let datos = datosSim
+    console.log(datos)
+
+    // Suavizado: cada punto pasa a ser el promedio con sus vecinos.
+    // Ej: 254, 253, 256, 254 -> los saltos pequeños se diluyen y
+    // solo sobreviven las subidas/bajadas sostenidas del terreno.
+    let datosSuavizados = datos.map((x, i) => {
+        x = x.elevation
+
+        if (i == 0) {
+            return (x + datos[i + 1].elevation) / 2
+        } else if (i == datos.length - 1) {
+            return (x + datos[i - 1].elevation) / 2
+        } else {
+            return (datos[i - 1].elevation + x + datos[i + 1].elevation) / 3
+        }
+    })
+
+    // Agrupa el desnivel en "rachas": mientras la diferencia siga el mismo
+    // signo, se acumula. Al cambiar de sentido, se cierra la racha y solo
+    // cuenta si supera UMBRAL_METROS.
+    // Ej: racha de +12m -> se suma a subidaTotal; racha de +3m -> se descarta.
+    let calculo = datosSuavizados.reduce(
+        (acc, current, i) => {
+            if (i == 0) {
+                acc.anterior = current
+            } else {
+                let diferencia = current - acc.anterior
+
+                if (
+                    Math.sign(diferencia) === Math.sign(acc.racha) &&
+                    diferencia != 0
+                ) {
+                    // Si la diferencia es distinta de cero y ademas tienen el mismo signo, sumamos a la racha
+                    acc.racha += diferencia
+                } else if (
+                    //Si la diferencia y la racha tienen distinto signo, y la diferencia es distinta de 0 quiere decir que hubo un cambio en la elevación, por tanto se rompe la racha
+                    Math.sign(diferencia) !== Math.sign(acc.racha) &&
+                    diferencia !== 0
+                ) {
+                    if (acc.racha > UMBRAL_METROS) {
+                        acc.subidaTotal += acc.racha
+                    } else if (acc.racha < -UMBRAL_METROS)
+                        acc.bajadaTotal += Math.abs(acc.racha)
+
+                    acc.racha = diferencia
+                }
+            }
+            acc.anterior = current
+            return acc
+        },
+        { subidaTotal: 0, bajadaTotal: 0, racha: 0, anterior: 0 },
+    )
+
+    if (calculo.racha > UMBRAL_METROS) {
+        calculo.subidaTotal += calculo.racha
+    } else if (calculo.racha < -UMBRAL_METROS) {
+        calculo.bajadaTotal += Math.abs(calculo.racha)
+    }
+
+    calculo = {
+        subidaTotal: Math.round(calculo.subidaTotal),
+        bajadaTotal: Math.round(calculo.bajadaTotal),
+    }
+
+    console.log(datosSuavizados)
+    console.log(calculo)
 }
 
 init()
