@@ -264,11 +264,8 @@ async function calculateElevation() {
     let interval = calculateIntervalPoints(measured)
     let dataPoints = calculateSelectedPoints(measured, interval)
 
-    //Open-Meteo espera dos listas separadas por comas: latitudes y longitudes
-    let latitude = dataPoints.map((x) => x.lat).join(',')
-    let longitude = dataPoints.map((x) => x.lng).join(',')
-
-    let fetchedElevation = await fetchElevation(latitude, longitude)
+    //El IGN necesita los puntos para calcular el bbox que los engloba a todos
+    let fetchedElevation = await fetchElevation(dataPoints)
 
     let elevationDict = dataPoints.map((x, index) => {
         return {
@@ -281,9 +278,8 @@ async function calculateElevation() {
 
     let resultado = calculateElevationChange(elevationDict)
 
-    console.log(resultado);
+    console.log(resultado)
     return resultado
-    
 }
 
 function calculateCumulativeDistance() {
@@ -366,11 +362,23 @@ function calculateSelectedPoints(measured, n) {
     return data.points
 }
 
-async function fetchElevation(locations) {
-    if (locations == '') return
+// Pide la elevación al WCS del IGN (Muestra 5m). Hace una sola petición con el
+// bbox que engloba toda la ruta, y luego muestrea la celda de cada punto.
+async function fetchElevation(points) {
+    if (points.length == 0) return
+
+    let lats = points.map((p) => p.lat)
+    let lngs = points.map((p) => p.lng)
+
+    //Margen para que ningún punto quede justo en el borde del bbox
+    let margin = 0.001
+    let minLat = Math.min(...lats) - margin
+    let maxLat = Math.max(...lats) + margin
+    let minLng = Math.min(...lngs) - margin
+    let maxLng = Math.max(...lngs) + margin
 
     const response = await fetch(
-        `https://api.opentopodata.org/v1/eudem25m?locations=${locations}`,
+        `https://servicios.idee.es/wcs-inspire/mdt?service=WCS&version=2.0.1&request=GetCoverage&coverageId=Elevacion4258_5&subset=lat(${minLat},${maxLat})&subset=long(${minLng},${maxLng})&format=application/asc`,
     )
 
     if (!response.ok) {
@@ -378,10 +386,60 @@ async function fetchElevation(locations) {
         alert('Algo esta fallando en la api')
         return
     }
-    const data = await response.json()
 
-    //Open Topo Data devuelve results[].elevation, lo aplano para dejarlo como antes
-    return data.results.map((x) => x.elevation)
+    let grid = parseAscGrid(await response.text())
+
+    //Devuelvo la elevación de cada punto, en el mismo orden en que entraron
+    return points.map((p) => sampleGrid(grid, p.lat, p.lng))
+}
+
+// Parsea el ASCII grid del IGN (viene envuelto en una cabecera MIME). Separa los
+// metadatos (ncols, nrows, esquina inferior-izquierda, tamaño de celda) de la
+// matriz de alturas.
+function parseAscGrid(text) {
+    const HEADER_KEYS = [
+        'ncols',
+        'nrows',
+        'xllcorner',
+        'yllcorner',
+        'dx',
+        'dy',
+        'cellsize',
+    ]
+    let meta = {}
+    let rows = []
+
+    for (let line of text.split('\n')) {
+        let t = line.trim()
+        if (t == '' || t.startsWith('--') || t.startsWith('Content')) continue
+
+        let p = t.split(/\s+/)
+        if (HEADER_KEYS.includes(p[0])) {
+            meta[p[0]] = parseFloat(p[1])
+        } else if (!isNaN(parseFloat(p[0]))) {
+            rows.push(p.map(Number))
+        }
+    }
+
+    return { ...meta, rows }
+}
+
+// Devuelve la altura de la celda de la rejilla que contiene la coordenada (lat, lng).
+function sampleGrid(grid, lat, lng) {
+    //El IGN usa cellsize cuando la celda es cuadrada, o dx/dy si difieren
+    let dx = grid.dx ?? grid.cellsize
+    let dy = grid.dy ?? grid.cellsize
+
+    let col = Math.floor((lng - grid.xllcorner) / dx)
+    let rowFromBottom = Math.floor((lat - grid.yllcorner) / dy)
+
+    col = Math.max(0, Math.min(grid.ncols - 1, col))
+    rowFromBottom = Math.max(0, Math.min(grid.nrows - 1, rowFromBottom))
+
+    //La primera fila del fichero es el norte (arriba), por eso hay que invertir
+    let row = grid.nrows - 1 - rowFromBottom
+
+    return grid.rows[row][col]
 }
 
 // Función de seguridad: si entre un punto y el siguiente hay una pendiente
@@ -476,10 +534,10 @@ function calculateElevationChange(data) {
         result.totalLoss += Math.abs(result.run)
     }
 
-    return result = {
+    return (result = {
         totalGain: Math.round(result.totalGain),
         totalLoss: Math.round(result.totalLoss),
-    }
+    })
 }
 
 init()
