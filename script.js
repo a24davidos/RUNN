@@ -112,30 +112,38 @@ async function fetchRoute() {
         return routeLine.setLatLngs([])
     }
 
-    const str = coords.map((x) => `${x[0]},${x[1]}`).join(';')
+    try {
+        const str = coords.map((x) => `${x[0]},${x[1]}`).join(';')
 
-    const response = await fetch(
-        `https://routing.openstreetmap.de/routed-foot/route/v1/foot/${str}?overview=full&geometries=geojson`,
-    )
+        const response = await fetch(
+            `https://routing.openstreetmap.de/routed-foot/route/v1/foot/${str}?overview=full&geometries=geojson`,
+        )
 
-    if (!response.ok) {
-        //VER COMO CONTROLARLO MAS ADELANTE ⚠️!!!
-        alert('Algo esta fallando en la api')
-        return
+        if (!response.ok) {
+            const err = new Error(
+                `No se pudo calcular la ruta (OSRM ${response.status})`,
+            )
+            err.status = response.status
+            throw err
+        }
+
+        const data = await response.json()
+
+        let routeCoords = data.routes[0].geometry.coordinates.map((x) => [
+            x[1],
+            x[0],
+        ])
+
+        routeLine.setLatLngs(routeCoords)
+        routeGeometry = routeCoords
+
+        //Actualizo el contador de Km
+        updateSpanKm(data.routes[0].distance)
+    } catch (error) {
+        console.error(error)
+        // Futura función a implementar que muestre el error al usuario
+        //showError("No se pudo calcular la ruta")
     }
-
-    const data = await response.json()
-
-    let routeCoords = data.routes[0].geometry.coordinates.map((x) => [
-        x[1],
-        x[0],
-    ])
-
-    routeLine.setLatLngs(routeCoords)
-    routeGeometry = routeCoords
-
-    //Actualizo el contador de Km
-    updateSpanKm(data.routes[0].distance)
 }
 
 // ==================== Setup del mapa ====================
@@ -260,26 +268,32 @@ async function calculateElevation() {
     //No se puede calcular la elevación de algo que no hay dibujado
     if (routeGeometry.length == 0) return
 
-    let measured = calculateCumulativeDistance()
-    let interval = calculateIntervalPoints(measured)
-    let dataPoints = calculateSelectedPoints(measured, interval)
+    try {
+        let measured = calculateCumulativeDistance()
+        let interval = calculateIntervalPoints(measured)
+        let dataPoints = calculateSelectedPoints(measured, interval)
 
-    //El IGN necesita los puntos para calcular el bbox que los engloba a todos
-    let fetchedElevation = await fetchElevation(dataPoints)
+        //El IGN necesita los puntos para calcular el bbox que los engloba a todos
+        let fetchedElevation = await fetchElevation(dataPoints)
 
-    let elevationDict = dataPoints.map((x, index) => {
-        return {
-            lat: x.lat,
-            lng: x.lng,
-            cD: x.cD,
-            elevation: fetchedElevation[index],
-        }
-    })
+        let elevationDict = dataPoints.map((x, index) => {
+            return {
+                lat: x.lat,
+                lng: x.lng,
+                cD: x.cD,
+                elevation: fetchedElevation[index],
+            }
+        })
 
-    let resultado = calculateElevationChange(elevationDict)
+        let resultado = calculateElevationChange(elevationDict)
 
-    console.log(resultado)
-    return resultado
+        console.log(resultado)
+        return resultado
+    } catch (error) {
+        console.error(error)
+        // Futura función a implementar que muestre el error al usuario
+        //showError("No se pudo calcular la elevación")
+    }
 }
 
 function calculateCumulativeDistance() {
@@ -382,9 +396,11 @@ async function fetchElevation(points) {
     )
 
     if (!response.ok) {
-        //VER COMO CONTROLARLO MAS ADELANTE ⚠️!!!
-        alert('Algo esta fallando en la api')
-        return
+        const err = new Error(
+            `No se pudo calcular la elevación (IGN ${response.status})`,
+        )
+        err.status = response.status
+        throw err
     }
 
     let grid = parseAscGrid(await response.text())
