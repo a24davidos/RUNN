@@ -285,10 +285,14 @@ async function calculateElevation() {
             }
         })
 
-        let resultado = calculateElevationChange(elevationDict)
+        //El perfil es la ruta ya limpia de valores extraños y suavizada. Lo usare para pintar la gráfica
+        let profile = smoothElevations(filterUnrealisticSlopes(elevationDict))
 
-        console.log(resultado)
-        return resultado
+        //Datos con la subida y bajada total en metros
+        let elevationChange = calculateElevationChange(profile)
+        
+        console.table(profile)
+        console.log(elevationChange)
     } catch (error) {
         console.error(error)
         // Futura función a implementar que muestre el error al usuario
@@ -488,35 +492,37 @@ function filterUnrealisticSlopes(data) {
     })
 }
 
-function calculateElevationChange(data) {
-    // Suavizado: cada punto pasa a ser el promedio con sus vecinos.
-    // Ej: 254, 253, 256, 254 -> los saltos pequeños se diluyen y
-    // solo sobreviven las subidas/bajadas sostenidas del terreno.
-
-    let cleanedData = filterUnrealisticSlopes(data)
-
-    let smoothedData = cleanedData.map((x, i) => {
-        x = x.elevation
+// Suavizado: cada punto pasa a ser el promedio con sus vecinos.
+// Ej: 254, 253, 256, 254 -> los saltos pequeños se diluyen y
+// solo sobreviven las subidas/bajadas sostenidas del terreno.
+function smoothElevations(data) {
+    return data.map((point, i) => {
+        let elevation
 
         if (i == 0) {
-            return (x + cleanedData[i + 1].elevation) / 2
-        } else if (i == cleanedData.length - 1) {
-            return (x + cleanedData[i - 1].elevation) / 2
+            elevation = (point.elevation + data[i + 1].elevation) / 2
+        } else if (i == data.length - 1) {
+            elevation = (point.elevation + data[i - 1].elevation) / 2
         } else {
-            return (
-                (cleanedData[i - 1].elevation +
-                    x +
-                    cleanedData[i + 1].elevation) /
+            elevation =
+                (data[i - 1].elevation +
+                    point.elevation +
+                    data[i + 1].elevation) /
                 3
-            )
         }
-    })
 
-    // Agrupo el desnivel en "rachas" (run): mientras la diferencia siga el mismo signo, se acumula.
+        return { ...point, elevation }
+    })
+}
+
+function calculateElevationChange(data) {
+    // Agrupo el desnivel en rachas: mientras la diferencia siga el mismo signo, se acumula.
     // Al cambiar de sentido, se cierra la racha y solo cuenta si supera RUN_THRESHOLD.
     // Ej: run de +12m -> se suma a totalGain; run de +3m -> se descarta.
-    let result = smoothedData.reduce(
-        (acc, current, i) => {
+    let result = data.reduce(
+        (acc, point, i) => {
+            let current = point.elevation
+
             if (i == 0) {
                 acc.previous = current
             } else {
