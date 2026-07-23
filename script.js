@@ -14,6 +14,27 @@ const WEIGHT = 4
 
 const RUN_THRESHOLD = 8
 const MAX_SLOPE = 35
+
+const popCanvas = document.getElementById("graphic").getContext("2d");
+
+
+let barChart = new Chart(popCanvas, {
+  type: 'line',
+  data: {
+    labels: ["China", "India", "United States", "Indonesia", "Brazil", "Pakistan", "Nigeria", "Bangladesh", "Russia", "Japan"],
+    datasets: [{
+      data: [1379302771, 1281935911, 326625791, 260580739, 207353391, 204924861, 190632261, 157826578, 142257519, 126451398],
+    }],
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins:{
+            legend: {display: false}
+        }
+    }
+});
+
 // ==================== Estado ====================
 let userPosition = null
 let map = null

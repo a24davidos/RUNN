@@ -95,7 +95,7 @@ h6 {
 }
 
 #elevation-profile {
-    height: 150px;
+    height: 200px;
 }
 
 .numbered-marker {
@@ -129,4 +129,8 @@ h6 {
     border: none;
     background: none;
     cursor: pointer;
+}
+
+#graphic{
+    width: 100%;
 }
