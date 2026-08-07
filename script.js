@@ -14,93 +14,15 @@ const WEIGHT = 4
 
 const RUN_THRESHOLD = 8
 const MAX_SLOPE = 35
+const SMOOTH_WINDOW = 1
 
 const popCanvas = document.getElementById("graphic").getContext("2d");
-const fakeProfile = [
-    { x: 0, y: 266.5 },
-    { x: 0.031, y: 265.6 },
-    { x: 0.048, y: 263.7 },
-    { x: 0.078, y: 263.3 },
-    { x: 0.096, y: 262.7 },
-    { x: 0.14, y: 262.4 },
-    { x: 0.162, y: 261.7 },
-    { x: 0.198, y: 261.3 },
-    { x: 0.206, y: 260.6 },
-    { x: 0.224, y: 260.1 },
-    { x: 0.254, y: 259.1 },
-    { x: 0.268, y: 258.4 },
-    { x: 0.299, y: 257.2 },
-    { x: 0.315, y: 256.8 },
-    { x: 0.344, y: 256 },
-    { x: 0.353, y: 255.9 },
-    { x: 0.377, y: 254.7 },
-    { x: 0.414, y: 253.1 },
-    { x: 0.448, y: 250.3 },
-    { x: 0.487, y: 248 },
-    { x: 0.507, y: 245.7 },
-    { x: 0.531, y: 244.4 },
-    { x: 0.56, y: 242.7 },
-    { x: 0.583, y: 241.3 },
-    { x: 0.604, y: 240.2 },
-    { x: 0.618, y: 238.1 },
-    { x: 0.66, y: 236.1 },
-    { x: 0.666, y: 232.3 },
-    { x: 0.719, y: 228.2 },
-    { x: 0.762, y: 224.2 },
-    { x: 0.788, y: 222.2 },
-    { x: 0.793, y: 221.5 },
-    { x: 0.817, y: 221 },
-    { x: 0.837, y: 220.6 },
-    { x: 0.867, y: 219.9 },
-    { x: 0.902, y: 218.6 },
-    { x: 0.93, y: 216.7 },
-    { x: 0.962, y: 215.7 },
-    { x: 0.973, y: 216.3 },
-    { x: 0.998, y: 216.6 },
-    { x: 1.025, y: 216.6 },
-    { x: 1.042, y: 215.1 },
-    { x: 1.082, y: 213.3 },
-    { x: 1.11, y: 211.5 },
-    { x: 1.183, y: 210 },
-    { x: 1.195, y: 208.3 },
-    { x: 1.296, y: 207.1 },
-    { x: 1.303, y: 206.3 },
-    { x: 1.366, y: 206.7 },
-    { x: 1.388, y: 207.2 },
-    { x: 1.408, y: 207.3 },
-    { x: 1.544, y: 206.8 },
-    { x: 1.566, y: 205.3 },
-    { x: 1.62, y: 203.9 },
-    { x: 1.638, y: 203.1 },
-    { x: 1.655, y: 203.1 },
-    { x: 1.682, y: 203.1 },
-    { x: 1.697, y: 203 },
-    { x: 1.722, y: 203 },
-    { x: 1.759, y: 203 },
-    { x: 1.763, y: 202.7 },
-    { x: 1.789, y: 202.4 },
-    { x: 1.808, y: 202.4 },
-    { x: 1.831, y: 203.2 },
-    { x: 1.872, y: 204.5 },
-    { x: 1.92, y: 206.7 },
-    { x: 1.955, y: 209.2 },
-    { x: 1.964, y: 212.2 },
-    { x: 1.982, y: 214.5 },
-    { x: 2.006, y: 217.5 },
-    { x: 2.024, y: 219.9 },
-    { x: 2.07, y: 221.9 },
-    { x: 2.094, y: 222.7 },
-    { x: 2.112, y: 223.3 },
-    { x: 2.134, y: 224.1 },
-    { x: 2.21, y: 224.7 },
-]
-
 
 let elevationChart = new Chart(popCanvas, {
   type: 'line',
   data: {
     datasets: [{
-        data: fakeProfile,
+        data: [],
         cubicInterpolationMode: 'monotone',
         pointRadius: 0,
         pointHoverRadius: 4
@@ -114,13 +36,25 @@ let elevationChart = new Chart(popCanvas, {
         },
         scales: {
             x: { type: 'linear', bounds: 'data' }
-        }
+        },
+        //Pintamos circulos en los puntos de la gráfica al pasar el ratón por encima, y no solo en el punto más cercano
+        interaction: {
+            mode: 'index',
+            intersect: false
+        },
+        onHover: handleChartHover
     }
 });
 
 // ==================== Estado ====================
 let userPosition = null
 let map = null
+
+//Guarda lat/lng de cada punto del perfil, en el mismo orden/índice que los datos del chart
+let elevationProfile = []
+
+//Marcador que se mueve por la ruta al pasar el ratón por la gráfica
+let elevationMarker = null
 
 let routeLine = L.polyline([], { color: COLOR, weight: WEIGHT })
 
@@ -363,6 +297,14 @@ function clearRoute() {
     routeGeometry = []
     updateSpanCounter(0)
     updateSpanKm(0)
+
+    //Limpiamos también la gráfica de elevación y el círculo que sigue al hover
+    elevationProfile = []
+    elevationChart.data.datasets[0].data = []
+    elevationChart.update()
+
+    if (elevationMarker) elevationMarker.remove()
+    elevationMarker = null
 }
 
 // ==================== Elevación ====================
@@ -394,13 +336,43 @@ async function calculateElevation() {
 
         //Datos con la subida y bajada total en metros
         let elevationChange = calculateElevationChange(profile)
-        
+
+        //Guardamos el perfil completo para poder recuperar lat/lng al pasar el ratón por el chart
+        elevationProfile = profile
+
+        //Chart.js necesita {x, y} cD está en metros y lo pasamos a km
+        elevationChart.data.datasets[0].data = profile.map((point) => {
+            return { x: point.cD / 1000, y: point.elevation }
+        })
+        elevationChart.update()
+
         console.table(profile)
         console.log(elevationChange)
     } catch (error) {
         console.error(error)
         // Futura función a implementar que muestre el error al usuario
         //showError("No se pudo calcular la elevación")
+    }
+}
+
+// Al pasar el ratón por la gráfica, movemos un marcador sobre el punto correspondiente de la ruta en el mapa. Se llama en cada evento 'hover' del chart.
+function handleChartHover(event, elements) {
+    if (elements.length == 0) {
+        if (elevationMarker) elevationMarker.remove()
+        elevationMarker = null
+        return
+    }
+
+    let index = elements[0].index
+    let point = elevationProfile[index]
+
+    if (!elevationMarker) {
+        elevationMarker = L.circleMarker([point.lat, point.lng], {
+            radius: 6,
+            color: COLOR,
+        }).addTo(map)
+    } else {
+        elevationMarker.setLatLng([point.lat, point.lng])
     }
 }
 
@@ -451,7 +423,7 @@ function haversine(lat1, lng1, lat2, lng2) {
 //Esto nos ayuda a calcular cuantos metros deberíamos dejar entre un punto y otro
 function calculateIntervalPoints(measured) {
     let idealInterval = Math.round(measured.at(-1).cD / 100)
-    let realInterval = Math.max(20, Math.min(50, idealInterval))
+    let realInterval = Math.max(10, Math.min(50, idealInterval))
 
     return realInterval
 }
@@ -596,24 +568,17 @@ function filterUnrealisticSlopes(data) {
     })
 }
 
-// Suavizado: cada punto pasa a ser el promedio con sus vecinos.
 // Ej: 254, 253, 256, 254 -> los saltos pequeños se diluyen y
 // solo sobreviven las subidas/bajadas sostenidas del terreno.
 function smoothElevations(data) {
     return data.map((point, i) => {
-        let elevation
+        let start = Math.max(0, i - SMOOTH_WINDOW)
+        let end = Math.min(data.length - 1, i + SMOOTH_WINDOW)
+        let neighbors = data.slice(start, end + 1)
 
-        if (i == 0) {
-            elevation = (point.elevation + data[i + 1].elevation) / 2
-        } else if (i == data.length - 1) {
-            elevation = (point.elevation + data[i - 1].elevation) / 2
-        } else {
-            elevation =
-                (data[i - 1].elevation +
-                    point.elevation +
-                    data[i + 1].elevation) /
-                3
-        }
+        let elevation =
+            neighbors.reduce((sum, p) => sum + p.elevation, 0) /
+            neighbors.length
 
         return { ...point, elevation }
     })
