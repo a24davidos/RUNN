@@ -15,6 +15,8 @@ const WEIGHT = 4
 const RUN_THRESHOLD = 8
 const MAX_SLOPE = 35
 const SMOOTH_WINDOW = 1
+//Suavizado extra que solo se aplica a la línea del gráfico, no al cálculo de desnivel
+const CHART_SMOOTH_WINDOW = 3
 
 const popCanvas = document.getElementById("graphic").getContext("2d");
 
@@ -25,17 +27,25 @@ let elevationChart = new Chart(popCanvas, {
         data: [],
         cubicInterpolationMode: 'monotone',
         pointRadius: 0,
-        pointHoverRadius: 4
+        pointHoverRadius: 4,
+        borderColor: 'oklch(0.7 0.19 145)',
+        backgroundColor: 'oklch(0.7 0.19 145 / 0.18)',
+        borderWidth: 1.6,
+        fill: true
     }]
     },
     options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins:{
-            legend: {display: false}
+            legend: {display: false},
+            //No necesitamos el popup nativo de Chart.js, ya tenemos el marcador en el mapa
+            tooltip: {enabled: false}
         },
         scales: {
-            x: { type: 'linear', bounds: 'data' }
+            //Sin ejes ni rejilla, la gráfica es solo la silueta del perfil
+            x: { type: 'linear', bounds: 'data', display: false },
+            y: { display: false }
         },
         //Pintamos circulos en los puntos de la gráfica al pasar el ratón por encima, y no solo en el punto más cercano
         interaction: {
@@ -69,6 +79,7 @@ let pointItems = pointList.getElementsByTagName('li')
 
 let spanCounterPoints = document.getElementById('counter')
 let spanCounterKm = document.getElementById('counter-km')
+let spanCounterElevation = document.getElementById('counter-elevation')
 
 let btnClearRoute = document.getElementById('btn-clear-route')
 let btnElevation = document.getElementById('btn-elevation')
@@ -120,6 +131,14 @@ function setPointNumber(li, marker, number) {
 
 function updateSpanKm(meters) {
     spanCounterKm.innerText = formatKm(meters)
+}
+
+function updateSpanElevation(elevationChange) {
+    if (!elevationChange) {
+        spanCounterElevation.innerText = '—'
+        return
+    }
+    spanCounterElevation.innerText = `+${elevationChange.totalGain}/-${elevationChange.totalLoss} m`
 }
 
 function updateSpanCounter(count) {
@@ -249,7 +268,7 @@ function addPoint(lat, lng) {
     li.innerHTML = `
         <span>${pointNumber}</span>
         <span>${point.getLatLng().lat.toFixed(4)}, ${point.getLatLng().lng.toFixed(4)}</span>
-        <button class="delete-btn">🗑️</button>
+        <button class="delete-btn">×</button>
     `
 
     //Añadimos a la lista de puntos
@@ -297,14 +316,14 @@ function clearRoute() {
     routeGeometry = []
     updateSpanCounter(0)
     updateSpanKm(0)
+    updateSpanElevation(null)
 
     //Limpiamos también la gráfica de elevación y el círculo que sigue al hover
     elevationProfile = []
     elevationChart.data.datasets[0].data = []
     elevationChart.update()
 
-    if (elevationMarker) elevationMarker.remove()
-    elevationMarker = null
+    clearElevationMarker()
 }
 
 // ==================== Elevación ====================
@@ -331,23 +350,28 @@ async function calculateElevation() {
             }
         })
 
-        //El perfil es la ruta ya limpia de valores extraños y suavizada. Lo usare para pintar la gráfica
+        //El perfil es la ruta ya limpia de valores extraños y suavizada. Este es el que manda
+        //para el cálculo de desnivel y para el hover (lat/lng reales de cada punto).
         let profile = smoothElevations(filterUnrealisticSlopes(elevationDict))
 
         //Datos con la subida y bajada total en metros
         let elevationChange = calculateElevationChange(profile)
+        updateSpanElevation(elevationChange)
 
         //Guardamos el perfil completo para poder recuperar lat/lng al pasar el ratón por el chart
         elevationProfile = profile
 
+        //Para el dibujo aplicamos un suavizado extra sobre el perfil ya calculado, solo
+        //afecta a la línea del gráfico, no al desnivel ni al hover (mismo orden/índices que profile)
+        let chartProfile = smoothElevations(profile, CHART_SMOOTH_WINDOW)
+
         //Chart.js necesita {x, y} cD está en metros y lo pasamos a km
-        elevationChart.data.datasets[0].data = profile.map((point) => {
+        elevationChart.data.datasets[0].data = chartProfile.map((point) => {
             return { x: point.cD / 1000, y: point.elevation }
         })
         elevationChart.update()
 
         console.table(profile)
-        console.log(elevationChange)
     } catch (error) {
         console.error(error)
         // Futura función a implementar que muestre el error al usuario
@@ -358,8 +382,7 @@ async function calculateElevation() {
 // Al pasar el ratón por la gráfica, movemos un marcador sobre el punto correspondiente de la ruta en el mapa. Se llama en cada evento 'hover' del chart.
 function handleChartHover(event, elements) {
     if (elements.length == 0) {
-        if (elevationMarker) elevationMarker.remove()
-        elevationMarker = null
+        clearElevationMarker()
         return
     }
 
@@ -375,6 +398,16 @@ function handleChartHover(event, elements) {
         elevationMarker.setLatLng([point.lat, point.lng])
     }
 }
+
+function clearElevationMarker() {
+    if (elevationMarker) elevationMarker.remove()
+    elevationMarker = null
+}
+
+//El onHover de Chart.js no dispara de forma fiable al salir del canvas
+//(evento 'mouseout'), así que escuchamos 'mouseleave' directamente para
+//asegurar que el marcador desaparece cuando dejamos de hacer hover.
+document.getElementById('graphic').addEventListener('mouseleave', clearElevationMarker)
 
 function calculateCumulativeDistance() {
     return routeGeometry.reduce((acc, currentPoint, i) => {
@@ -570,10 +603,10 @@ function filterUnrealisticSlopes(data) {
 
 // Ej: 254, 253, 256, 254 -> los saltos pequeños se diluyen y
 // solo sobreviven las subidas/bajadas sostenidas del terreno.
-function smoothElevations(data) {
+function smoothElevations(data, window = SMOOTH_WINDOW) {
     return data.map((point, i) => {
-        let start = Math.max(0, i - SMOOTH_WINDOW)
-        let end = Math.min(data.length - 1, i + SMOOTH_WINDOW)
+        let start = Math.max(0, i - window)
+        let end = Math.min(data.length - 1, i + window)
         let neighbors = data.slice(start, end + 1)
 
         let elevation =

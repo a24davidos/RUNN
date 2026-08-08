@@ -1,3 +1,21 @@
+/* ==================== Tokens del diseño (RUNN) ==================== */
+:root {
+    --bg: oklch(0.08 0 0);
+    --bg-panel: oklch(0.12 0 0);
+    --border: oklch(1 0 0 / 0.16);
+    --border-strong: oklch(1 0 0 / 0.28);
+    --text: oklch(0.95 0 0);
+    --text-dim: oklch(0.75 0 0);
+    --text-muted: oklch(0.58 0 0);
+    --text-faint: oklch(0.5 0 0);
+    --accent: oklch(0.7 0.19 145);
+    --danger-border: oklch(0.4 0.1 30);
+    --danger-border-hover: oklch(0.75 0.16 30);
+    --danger-text: #ff0000;
+    --mono: ui-monospace, monospace;
+    --sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+}
+
 /* 1. Usar un modelo de box-sizing más intuitivo */
 *,
 *::before,
@@ -22,6 +40,21 @@ body {
     line-height: 1.5;
     /* 5. Mejorar el renderizado de texto */
     -webkit-font-smoothing: antialiased;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+}
+
+/* Scrollbars oscuros, a juego con el resto de la UI */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: oklch(1 0 0 / 0.24);
+}
+::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 /* 6. Mejorar los valores por defecto de los medios */
@@ -80,7 +113,12 @@ h6 {
 }
 
 #sidebar {
-    flex: 0 0 20%;
+    flex: 0 0 360px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-right: 1px solid var(--border);
+    background: var(--bg);
 }
 
 #map-wrapper {
@@ -92,10 +130,6 @@ h6 {
 
 #map {
     flex: 1;
-}
-
-#elevation-profile {
-    height: 200px;
 }
 
 .numbered-marker {
@@ -116,21 +150,184 @@ h6 {
     display: flex;
 }
 
+/* ==================== Sidebar ==================== */
+
+.sidebar-header {
+    flex: none;
+    padding: 16px 20px 12px;
+}
+
+.app-title {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--text);
+}
+
+.section-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.stats-row {
+    flex: none;
+    margin: 0 20px 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.stat-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.stat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+}
+
+.stat-value {
+    font-size: 16px;
+    font-weight: 700;
+    font-family: var(--mono);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.section {
+    flex: none;
+    padding: 0 20px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.elevation-card {
+    position: relative;
+    height: 90px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    padding: 10px;
+}
+
+.btn-accent {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 8px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-accent:hover {
+    background: oklch(0.7 0.19 145 / 0.12);
+}
+
+.points-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.points-header {
+    flex: none;
+    padding: 4px 20px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.icon-btn {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--text-dim);
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-btn:hover {
+    border-color: var(--text);
+    color: var(--text);
+}
+
+.icon-btn-danger {
+    border-color: var(--danger-border);
+    color: var(--danger-text);
+}
+
+.icon-btn-danger:hover {
+    border-color: var(--danger-border-hover);
+}
+
 #point-list {
+    flex: 1;
+    overflow-y: auto;
     list-style: none;
-    padding-left: 0;
+    margin: 0;
+    padding: 0 12px 12px;
 }
 
 .point-item {
-    border: 1px solid black;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    margin-bottom: 2px;
+    border: 1px dashed transparent;
+}
+
+.point-item:hover {
+    background: oklch(1 0 0 / 0.05);
+}
+
+.point-item span:first-child {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: #5fff00;
+    width: 26px;
+    flex: none;
+}
+
+.point-item span:last-of-type {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--text-dim);
+    flex: 1;
 }
 
 .delete-btn {
     border: none;
     background: none;
     cursor: pointer;
+    color: var(--text-faint);
+    font-size: 14px;
+    line-height: 1;
+    padding: 2px 4px;
 }
 
-#graphic{
+.delete-btn:hover {
+    color: var(--text);
+}
+
+#graphic {
     width: 100%;
 }
