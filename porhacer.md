@@ -1,0 +1,4 @@
+- Me gustaría ver si implemento el deshacer
+- Me gustaría ver si implemento un, cerrar ruta
+- Me gustaría implementar para descargar gps
+- Revisar el control de errores.
