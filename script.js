@@ -281,6 +281,10 @@ function addPoint(lat, lng) {
         updateLi(point._leaflet_id, position.lat, position.lng)
     })
 
+    point.addEventListener('contextmenu', function (e) {
+        deletePointById(point._leaflet_id)
+    })
+
     let li = document.createElement('li')
     li.classList.add('point-item')
     li.dataset.pointId = point._leaflet_id
@@ -291,7 +295,7 @@ function addPoint(lat, lng) {
         <span>${point.getLatLng().lat.toFixed(4)}, ${point.getLatLng().lng.toFixed(4)}</span>
         <button class="delete-btn">×</button>
     `
-
+    
     //Añadimos a la lista de puntos
     pointList.appendChild(li)
 
@@ -304,6 +308,10 @@ function addPoint(lat, lng) {
 
 function deletePoint(e) {
     let id = e.target.closest('li').dataset.pointId
+    deletePointById(id)
+}
+
+function deletePointById(id) {
     //Eliminamos el nodo de la lista
     pointList.querySelector(`[data-point-id="${id}"]`).remove()
 
@@ -724,7 +732,7 @@ function calculateChartSmoothWindow(profile) {
     )
 
     let smoothWindow = Math.max(1, Math.round(radius / spacing))
-    
+
     let medianWindow = Math.max(1, Math.round(smoothWindow / 3))
 
     return { smoothWindow, medianWindow }
