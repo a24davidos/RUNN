@@ -190,6 +190,16 @@ h6 {
     min-width: 0;
 }
 
+/* La gráfica ocupa su propia fila a todo lo ancho, debajo de Distancia/Desnivel */
+.elevation-mini-card {
+    grid-column: 1 / -1;
+}
+
+.elevation-mini {
+    position: relative;
+    height: 74px;
+}
+
 .stat-label {
     font-size: 10px;
     text-transform: uppercase;
@@ -310,27 +320,6 @@ h6 {
     color: var(--text-faint);
 }
 
-.elevation-card {
-    position: relative;
-    height: 90px;
-    background: var(--bg-panel);
-    border: 1px solid var(--border);
-    padding: 10px;
-}
-
-.btn-accent {
-    background: transparent;
-    border: 1px solid var(--accent);
-    color: var(--accent);
-    padding: 8px 12px;
-    font-size: 12.5px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.btn-accent:hover {
-    background: oklch(0.7 0.19 145 / 0.12);
-}
 
 .points-section {
     flex: 1;
@@ -379,6 +368,53 @@ h6 {
 .icon-btn-danger:hover {
     border-color: var(--danger-border-hover);
     color: var(--danger-border-hover);
+}
+
+/* Iconos SVG */
+.icon-svg {
+    display: inline-block;
+    background-color: currentColor;
+}
+
+.icon-svg-x {
+    -webkit-mask: url('icons/x.svg') no-repeat center / contain;
+    mask: url('icons/x.svg') no-repeat center / contain;
+}
+
+.icon-svg-undo {
+    -webkit-mask: url('icons/undo.svg') no-repeat center / contain;
+    mask: url('icons/undo.svg') no-repeat center / contain;
+}
+
+.icon-btn .icon-svg {
+    width: 14px;
+    height: 14px;
+}
+
+.search-clear .icon-svg {
+    width: 12px;
+    height: 12px;
+}
+
+.delete-btn .icon-svg {
+    width: 13px;
+    height: 13px;
+}
+
+/* Atajos flotantes sobre el mapa en móvil */
+.map-fab {
+    display: none;
+}
+
+.map-fab .icon-svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* El icono de deshacer llena más su viewBox que la X, así que a igual caja se ve más grande */
+.map-fab .icon-svg-undo {
+    width: 15px;
+    height: 15px;
 }
 
 #point-list {
@@ -439,4 +475,147 @@ h6 {
 
 #graphic {
     width: 100%;
+}
+
+/* Quitamos +/- */
+.leaflet-control-zoom {
+    display: none;
+}
+
+/* ==================== Mobile (bottom sheet) ==================== */
+
+.sheet-handle {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    #container {
+        position: relative;
+        height: 100dvh;
+    }
+
+    /* El mapa siempre a pantalla completa, y el bottom sheet se coloca por encima */
+    #map-wrapper {
+        position: absolute;
+        inset: 0;
+    }
+
+    #sidebar {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 130px;
+        border-right: none;
+        border-top: 1px solid var(--border);
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -8px 24px oklch(0 0 0 / 0.45);
+        overflow: hidden;
+        transition: height 0.25s ease;
+        /* Por encima del mapa y de sus controles de zoom */
+        z-index: 1000;
+    }
+
+
+    .sheet-handle {
+        display: flex;
+        flex: none;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 14px 0 20px;
+        background: none;
+        border: none;
+        cursor: grab;
+        /* Evita que el navegador interprete el arrastre como scroll de página */
+        touch-action: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+    }
+
+    .sheet-handle:active {
+        cursor: grabbing;
+    }
+
+    .sheet-handle::before {
+        content: '';
+        width: 36px;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--border-strong);
+    }
+
+    /* Quitamos el título*/
+    .sidebar-header {
+        display: none;
+    }
+
+    /* Menos alto que en escritorio, el espacio de la hoja es más justo */
+    .elevation-mini {
+        height: 68px;
+    }
+    #sidebar:not(.is-expanded) .elevation-mini-card {
+        display: none;
+    }
+
+    /* Puramente decorativa en móvil, sin hover/touch (el marcador de la gráfica no tiene sentido con el dedo) */
+    #graphic {
+        pointer-events: none;
+    }
+
+
+    .icon-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+
+    .point-item {
+        padding: 12px 10px;
+        gap: 12px;
+    }
+
+    .point-item span:first-child {
+        font-size: 13px;
+    }
+
+    .point-item span:last-of-type {
+        font-size: 14px;
+    }
+
+    .delete-btn {
+        font-size: 16px;
+        padding: 6px 8px;
+    }
+
+    /* Atajos flotantes en las esquinas superiores del mapa, sin tener que abrir la hoja */
+    .map-fab {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top: calc(env(safe-area-inset-top, 0px) + 16px);
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--border-strong);
+        background: var(--bg-panel);
+        color: var(--text-dim);
+        font-size: 16px;
+        line-height: 1;
+        padding: 0;
+        cursor: pointer;
+        z-index: 1000;
+    }
+
+    #btn-clear-route-fab {
+        left: 16px;
+        color: var(--danger-text);
+    }
+
+    #btn-undo-point-fab {
+        left: 16px;
+        /* Debajo del de limpiar ruta: 40px de alto + 10px de separación */
+        top: calc(env(safe-area-inset-top, 0px) + 16px + 40px + 10px);
+    }
 }

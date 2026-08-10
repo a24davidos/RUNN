@@ -16,6 +16,9 @@ const SEARCH_DEBOUNCE_MS = 350
 const SEARCH_MIN_CHARS = 3
 const SEARCH_MAX_RESULTS = 5
 
+//Espera a que la ruta deje de cambiar antes de llamar al IGN, así no disparamos una petición por cada punto que muevas
+const ELEVATION_DEBOUNCE_MS = 600
+
 const RUN_THRESHOLD = 8
 const MAX_SLOPE = 35
 const SMOOTH_WINDOW = 1
@@ -93,13 +96,21 @@ let spanCounterKm = document.getElementById('counter-km')
 let spanCounterElevation = document.getElementById('counter-elevation')
 
 let btnClearRoute = document.getElementById('btn-clear-route')
-let btnElevation = document.getElementById('btn-elevation')
+let btnUndoPoint = document.getElementById('btn-undo-point')
+//Atajos flotantes sobre el mapa en móvil
+let btnClearRouteFab = document.getElementById('btn-clear-route-fab')
+let btnUndoPointFab = document.getElementById('btn-undo-point-fab')
 let searchInput = document.getElementById('search-place')
 let searchClearBtn = document.getElementById('search-clear')
 let searchResultsList = document.getElementById('search-results')
 
 let searchDebounceTimer = null
 let searchAbortController = null
+
+let elevationDebounceTimer = null
+
+let sidebar = document.getElementById('sidebar')
+let sheetHandle = document.getElementById('sheet-handle')
 // ==================== Arranque / Geolocalización ====================
 function init() {
     navigator.geolocation.getCurrentPosition(showPosition, showErrorLocation)
@@ -176,14 +187,19 @@ function getRouteCoords() {
     })
 }
 
+let routeRequestId = 0
+
 async function fetchRoute() {
     let coords = getRouteCoords()
+    let requestId = ++routeRequestId
 
     //Tiene que haber mínimo 2 puntos para hacer una llamada a la Api
     if (coords.length < 2) {
+        clearTimeout(elevationDebounceTimer)
         updateSpanKm(0)
         routeGeometry = []
-        return routeLine.setLatLngs([])
+        routeLine.setLatLngs([])
+        return resetElevationDisplay()
     }
 
     try {
@@ -203,6 +219,9 @@ async function fetchRoute() {
 
         const data = await response.json()
 
+        //Si hay una llamada más nueva en marcha, esta respuesta ya no vale
+        if (requestId !== routeRequestId) return
+
         let routeCoords = data.routes[0].geometry.coordinates.map((x) => [
             x[1],
             x[0],
@@ -213,11 +232,20 @@ async function fetchRoute() {
 
         //Actualizo el contador de Km
         updateSpanKm(data.routes[0].distance)
+
+        //Antes había que darle a un botón; ahora el desnivel se recalcula solo en cada cambio de ruta
+        scheduleElevationCalculation()
     } catch (error) {
         console.error(error)
         // Futura función a implementar que muestre el error al usuario
         //showError("No se pudo calcular la ruta")
     }
+}
+
+//Si llega otro cambio de ruta antes de que salte el timer, se cancela y se reinicia la cuenta
+function scheduleElevationCalculation() {
+    clearTimeout(elevationDebounceTimer)
+    elevationDebounceTimer = setTimeout(calculateElevation, ELEVATION_DEBOUNCE_MS)
 }
 
 // ==================== Setup del mapa ====================
@@ -231,6 +259,9 @@ function renderMap(lat, lon) {
             '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map)
 
+    //Quitamos el "Leaflet" del footer, ya que no aporta nada y ocupa espacio en móvil
+    map.attributionControl.setPrefix(false)
+
     routeLine.addTo(map)
 
     initEvents()
@@ -241,7 +272,7 @@ function initEvents() {
 
     //Evento para eliminar puntos
     pointList.addEventListener('click', (e) => {
-        if (e.target.className == 'delete-btn') {
+        if (e.target.closest('.delete-btn')) {
             deletePoint(e)
         }
     })
@@ -254,14 +285,17 @@ function initEvents() {
 
     //Botón para limpiar la ruta
     btnClearRoute.addEventListener('click', clearRoute)
+    //Botón para deshacer: borra el último punto añadido
+    btnUndoPoint.addEventListener('click', undoLastPoint)
+    //Mismos botones pero flotando sobre el mapa, para móvil
+    btnClearRouteFab.addEventListener('click', clearRoute)
+    btnUndoPointFab.addEventListener('click', undoLastPoint)
     //Botón para borrar el texto del buscador
     searchClearBtn.addEventListener('click', () => {
         searchInput.value = ''
         searchInput.focus()
         hideSearchResults()
     })
-    //Botón para calcular la elevación
-    btnElevation.addEventListener('click', calculateElevation)
 
     //Buscador de lugares (Photon)
     searchInput.addEventListener('input', handleSearchInput)
@@ -274,6 +308,132 @@ function initEvents() {
             hideSearchResults()
         }
     })
+
+    //Tirador inferior en móvil: arrastre táctil real
+    sheetHandle.addEventListener('pointerdown', onSheetDragStart)
+    sheetHandle.addEventListener('pointermove', onSheetDragMove)
+    sheetHandle.addEventListener('pointerup', onSheetDragEnd)
+    sheetHandle.addEventListener('pointercancel', onSheetDragEnd)
+
+    sheetHandle.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return
+        e.preventDefault()
+        setSheetState(sheetState === 'expanded' ? 'collapsed' : 'expanded')
+    })
+
+    window.addEventListener('resize', onWindowResize)
+
+    //Alturas iniciales del menú móvil
+    measureSheetHeights()
+}
+
+// ==================== Menu inferior (móvil): arrastre táctil ====================
+
+const SHEET_EXPANDED_RATIO = 0.82 //% de la altura de la pantalla cuando está expandida
+const SHEET_BOTTOM_BREATHING_ROOM = 12 //px extra bajo las estadísticas en el estado "collapsed"
+
+let sheetHeights = { collapsed: 130, expanded: 0 }
+let sheetState = 'collapsed'
+
+let sheetDragStartY = 0
+let sheetDragStartHeight = 0
+let sheetDragMoved = false
+let isDraggingSheet = false
+
+function isMobileLayout() {
+    return window.matchMedia('(max-width: 768px)').matches
+}
+
+function measureSheetHeights() {
+    if (!isMobileLayout()) {
+        sidebar.style.height = ''
+        return
+    }
+
+    let sidebarTop = sidebar.getBoundingClientRect().top
+
+    //Solo hasta las tarjetas de Distancia/Desnivel, la de la gráfica va oculta por CSS
+    let visibleCards = document.querySelectorAll(
+        '.stats-row > .stat-card:not(.elevation-mini-card)',
+    )
+    let lastVisibleBottom = Math.max(
+        ...Array.from(visibleCards, (card) => card.getBoundingClientRect().bottom),
+    )
+
+    sheetHeights.collapsed =
+        lastVisibleBottom - sidebarTop + SHEET_BOTTOM_BREATHING_ROOM
+    sheetHeights.expanded = window.innerHeight * SHEET_EXPANDED_RATIO
+
+    setSheetState(sheetState, false)
+}
+
+function setSheetState(state, animate = true) {
+    if (!isMobileLayout()) {
+        sidebar.style.height = ''
+        return
+    }
+
+    sheetState = state
+    sidebar.style.transition = animate ? '' : 'none'
+    sidebar.style.height = `${sheetHeights[state]}px`
+    sidebar.classList.toggle('is-expanded', state === 'expanded')
+    sheetHandle.setAttribute('aria-expanded', state === 'expanded')
+
+    if (!animate) {
+        sidebar.offsetHeight
+        sidebar.style.transition = ''
+    }
+}
+
+function onSheetDragStart(e) {
+    if (!isMobileLayout()) return
+
+    isDraggingSheet = true
+    sheetDragMoved = false
+    sheetDragStartY = e.clientY
+    sheetDragStartHeight = sidebar.getBoundingClientRect().height
+    sidebar.style.transition = 'none'
+    sheetHandle.setPointerCapture(e.pointerId)
+}
+
+function onSheetDragMove(e) {
+    if (!isDraggingSheet) return
+
+    let delta = sheetDragStartY - e.clientY
+    if (Math.abs(delta) > 4) sheetDragMoved = true
+
+    let newHeight = sheetDragStartHeight + delta
+    newHeight = Math.min(
+        sheetHeights.expanded,
+        Math.max(sheetHeights.collapsed, newHeight),
+    )
+    sidebar.style.height = `${newHeight}px`
+}
+
+function onSheetDragEnd(e) {
+    if (!isDraggingSheet) return
+    isDraggingSheet = false
+
+    //Sin apenas arrastre: se interpreta como un tap y alterna collapsed/expanded
+    if (!sheetDragMoved) {
+        setSheetState(sheetState === 'expanded' ? 'collapsed' : 'expanded')
+        return
+    }
+
+    //Arrastre real: nos quedamos con la parada más cercana a donde se soltó
+    let currentHeight = sidebar.getBoundingClientRect().height
+    let closest = Object.entries(sheetHeights).reduce((best, [state, h]) =>
+        Math.abs(h - currentHeight) < Math.abs(best[1] - currentHeight)
+            ? [state, h]
+            : best,
+    )
+
+    setSheetState(closest[0])
+}
+
+function onWindowResize() {
+    if (map) map.invalidateSize()
+    measureSheetHeights()
 }
 
 // ==================== Buscador de lugares ====================
@@ -405,7 +565,7 @@ function addPoint(lat, lng) {
     li.innerHTML = `
         <span>${pointNumber}</span>
         <span>${point.getLatLng().lat.toFixed(4)}, ${point.getLatLng().lng.toFixed(4)}</span>
-        <button class="delete-btn">×</button>
+        <button class="delete-btn"><span class="icon-svg icon-svg-x"></span></button>
     `
     
     //Añadimos a la lista de puntos
@@ -421,6 +581,14 @@ function addPoint(lat, lng) {
 function deletePoint(e) {
     let id = e.target.closest('li').dataset.pointId
     deletePointById(id)
+}
+
+//Quitamos el último punto puesto
+function undoLastPoint() {
+    if (pointItems.length === 0) return
+
+    let lastItem = pointItems[pointItems.length - 1]
+    deletePointById(lastItem.dataset.pointId)
 }
 
 function deletePointById(id) {
@@ -500,9 +668,14 @@ function clearRoute() {
     routeGeometry = []
     updateSpanCounter(0)
     updateSpanKm(0)
+
+    resetElevationDisplay()
+}
+
+//Limpia estadística, gráfica y marcador de elevación (ruta vacía o con < 2 puntos)
+function resetElevationDisplay() {
     updateSpanElevation(null)
 
-    //Limpiamos también la gráfica de elevación y el círculo que sigue al hover
     elevationProfile = []
     elevationChart.data.datasets[0].data = []
     elevationChart.options.scales.y.min = undefined

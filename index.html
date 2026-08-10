@@ -28,6 +28,14 @@
     <body>
         <div id="container">
             <aside id="sidebar">
+                <div
+                    id="sheet-handle"
+                    class="sheet-handle"
+                    role="button"
+                    tabindex="0"
+                    aria-label="Expandir/colapsar panel"
+                    aria-expanded="false"
+                ></div>
                 <div class="sidebar-header">
                     <h2 class="app-title">RUNN</h2>
                 </div>
@@ -48,7 +56,7 @@
                             title="Borrar búsqueda"
                             tabindex="-1"
                         >
-                            ✕
+                            <span class="icon-svg icon-svg-x"></span>
                         </button>
                         <ul id="search-results" class="search-results" hidden></ul>
                     </div>
@@ -65,17 +73,13 @@
                             <span class="stat-label">Desnivel</span>
                             <span class="stat-value" id="counter-elevation">—</span>
                         </div>
+                        <div class="stat-card elevation-mini-card">
+                            <span class="stat-label">Perfil de elevación</span>
+                            <div class="elevation-mini">
+                                <canvas id="graphic"></canvas>
+                            </div>
+                        </div>
                     </div>
-                </div>
-
-                <div class="section">
-                    <h3 class="section-label">Perfil de elevación</h3>
-                    <div class="elevation-card">
-                        <canvas id="graphic"></canvas>
-                    </div>
-                    <button id="btn-elevation" class="btn-accent">
-                        Calcular Elevación
-                    </button>
                 </div>
 
                 <div class="points-section">
@@ -89,14 +93,14 @@
                                 class="icon-btn"
                                 title="Deshacer último punto"
                             >
-                                ↺
+                                <span class="icon-svg icon-svg-undo"></span>
                             </button>
                             <button
                                 id="btn-clear-route"
                                 class="icon-btn icon-btn-danger"
                                 title="Limpiar ruta"
                             >
-                                ✕
+                                <span class="icon-svg icon-svg-x"></span>
                             </button>
                         </div>
                     </div>
@@ -105,6 +109,20 @@
             </aside>
             <main id="map-wrapper">
                 <div id="map"></div>
+                <button
+                    id="btn-clear-route-fab"
+                    class="map-fab map-fab-danger"
+                    title="Limpiar ruta"
+                >
+                    <span class="icon-svg icon-svg-x"></span>
+                </button>
+                <button
+                    id="btn-undo-point-fab"
+                    class="map-fab"
+                    title="Deshacer último punto"
+                >
+                    <span class="icon-svg icon-svg-undo"></span>
+                </button>
             </main>
         </div>
     </body>
