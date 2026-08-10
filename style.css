@@ -344,7 +344,7 @@ h6 {
 
 .icon-btn-danger:hover {
     border-color: var(--danger-border-hover);
-    color: var(--danger-text);
+    color: var(--danger-border-hover);
 }
 
 #point-list {

@@ -386,8 +386,13 @@ async function calculateElevation() {
     }
 }
 
+//Fuente de verdad para evitar bugs con el mouseleave del chartJS
+let isHoveringChart = false
+
 // Al pasar el ratón por la gráfica, movemos un marcador sobre el punto correspondiente de la ruta en el mapa. Se llama en cada evento 'hover' del chart.
 function handleChartHover(event, elements) {
+    if (!isHoveringChart) return
+
     if (elements.length == 0) {
         clearElevationMarker()
         return
@@ -398,8 +403,11 @@ function handleChartHover(event, elements) {
 
     if (!elevationMarker) {
         elevationMarker = L.circleMarker([point.lat, point.lng], {
-            radius: 6,
-            color: COLOR,
+            radius: 8,
+            color: '#000',
+            weight: 2,
+            fillColor: '#fff',
+            fillOpacity: 1,
         }).addTo(map)
     } else {
         elevationMarker.setLatLng([point.lat, point.lng])
@@ -411,10 +419,16 @@ function clearElevationMarker() {
     elevationMarker = null
 }
 
-//El onHover de Chart.js no dispara de forma fiable al salir del canvas
-//(evento 'mouseout'), así que escuchamos 'mouseleave' directamente para
-//asegurar que el marcador desaparece cuando dejamos de hacer hover.
-document.getElementById('graphic').addEventListener('mouseleave', clearElevationMarker)
+//El onHover de Chart.js no dispara de forma fiable al salir del canvas (evento 'mouseout'), así que escuchamos 'mouseenter'/'mouseleave' directamente
+
+let chartCanvas = document.getElementById('graphic')
+chartCanvas.addEventListener('mouseenter', () => {
+    isHoveringChart = true
+})
+chartCanvas.addEventListener('mouseleave', () => {
+    isHoveringChart = false
+    clearElevationMarker()
+})
 
 function calculateCumulativeDistance() {
     return routeGeometry.reduce((acc, currentPoint, i) => {
