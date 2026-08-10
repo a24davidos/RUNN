@@ -9,7 +9,7 @@ const ZOOM = 13
 const MAXZOOM = 18
 const ICONSIZE = 25
 const ICONANCHOR = 15
-const COLOR = 'blue'
+const COLOR = '#000'
 const WEIGHT = 4
 
 const RUN_THRESHOLD = 8
