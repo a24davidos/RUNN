@@ -29,22 +29,46 @@
         <div id="container">
             <aside id="sidebar">
                 <div class="sidebar-header">
-                    <span class="app-title">RUNN</span>
+                    <h2 class="app-title">RUNN</h2>
                 </div>
 
-                <div class="stats-row">
-                    <div class="stat-card">
-                        <span class="stat-label">Distancia</span>
-                        <span class="stat-value" id="counter-km">0 m</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-label">Desnivel</span>
-                        <span class="stat-value" id="counter-elevation">—</span>
+                <div class="search-section">
+                    <div class="search-box">
+                        <span class="search-icon"></span>
+                        <input
+                            type="text"
+                            id="search-place"
+                            class="search-input"
+                            placeholder="Buscar dirección o lugar..."
+                        />
+                        <button
+                            type="button"
+                            id="search-clear"
+                            class="search-clear"
+                            title="Borrar búsqueda"
+                            tabindex="-1"
+                        >
+                            ✕
+                        </button>
                     </div>
                 </div>
 
                 <div class="section">
-                    <span class="section-label">Perfil de elevación</span>
+                    <h3 class="section-label">Estadísticas</h3>
+                    <div class="stats-row">
+                        <div class="stat-card">
+                            <span class="stat-label">Distancia</span>
+                            <span class="stat-value" id="counter-km">0 m</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Desnivel</span>
+                            <span class="stat-value" id="counter-elevation">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3 class="section-label">Perfil de elevación</h3>
                     <div class="elevation-card">
                         <canvas id="graphic"></canvas>
                     </div>
@@ -55,16 +79,25 @@
 
                 <div class="points-section">
                     <div class="points-header">
-                        <span class="section-label"
-                            >Puntos (<span id="counter">0</span>)</span
-                        >
-                        <button
-                            id="btn-clear-route"
-                            class="icon-btn icon-btn-danger"
-                            title="Limpiar ruta"
-                        >
-                            ✕
-                        </button>
+                        <h3 class="section-label">
+                            Puntos (<span id="counter">0</span>)
+                        </h3>
+                        <div class="points-header-actions">
+                            <button
+                                id="btn-undo-point"
+                                class="icon-btn"
+                                title="Deshacer último punto"
+                            >
+                                ↺
+                            </button>
+                            <button
+                                id="btn-clear-route"
+                                class="icon-btn icon-btn-danger"
+                                title="Limpiar ruta"
+                            >
+                                ✕
+                            </button>
+                        </div>
                     </div>
                     <ol id="point-list"></ol>
                 </div>

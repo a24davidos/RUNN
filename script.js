@@ -83,6 +83,8 @@ let spanCounterElevation = document.getElementById('counter-elevation')
 
 let btnClearRoute = document.getElementById('btn-clear-route')
 let btnElevation = document.getElementById('btn-elevation')
+let searchInput = document.getElementById('search-place')
+let searchClearBtn = document.getElementById('search-clear')
 // ==================== Arranque / Geolocalización ====================
 function init() {
     navigator.geolocation.getCurrentPosition(showPosition, showErrorLocation)
@@ -231,6 +233,11 @@ function initEvents() {
 
     //Botón para limpiar la ruta
     btnClearRoute.addEventListener('click', clearRoute)
+    //Botón para borrar el texto del buscador
+    searchClearBtn.addEventListener('click', () => {
+        searchInput.value = ''
+        searchInput.focus()
+    })
     //Botón para calcular la elevación
     btnElevation.addEventListener('click', calculateElevation)
 }

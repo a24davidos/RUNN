@@ -174,7 +174,6 @@ h6 {
 
 .stats-row {
     flex: none;
-    margin: 0 20px 14px;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
@@ -214,6 +213,68 @@ h6 {
     gap: 8px;
 }
 
+.search-section {
+    flex: none;
+    padding: 0 20px 14px;
+}
+
+.search-box {
+    position: relative;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    background-color: var(--text-faint);
+    -webkit-mask: url('icons/search.svg') no-repeat center / contain;
+    mask: url('icons/search.svg') no-repeat center / contain;
+    pointer-events: none;
+}
+
+.search-input {
+    width: 100%;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 28px 8px 34px;
+    font-size: 13px;
+}
+
+.search-clear {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+    padding: 4px;
+}
+
+.search-clear:hover {
+    color: var(--text);
+}
+
+.search-input:placeholder-shown ~ .search-clear {
+    display: none;
+}
+
+.search-input::placeholder {
+    color: var(--text-faint);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--border-strong);
+}
+
 .elevation-card {
     position: relative;
     height: 90px;
@@ -251,6 +312,12 @@ h6 {
     justify-content: space-between;
 }
 
+.points-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .icon-btn {
     background: transparent;
     border: 1px solid var(--border-strong);
@@ -276,6 +343,7 @@ h6 {
 
 .icon-btn-danger:hover {
     border-color: var(--danger-border-hover);
+    color: var(--danger-text);
 }
 
 #point-list {
