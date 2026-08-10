@@ -156,6 +156,9 @@ h6 {
 .sidebar-header {
     flex: none;
     padding: 16px 20px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .app-title {
@@ -386,6 +389,11 @@ h6 {
     mask: url('icons/undo.svg') no-repeat center / contain;
 }
 
+.icon-svg-download {
+    -webkit-mask: url('icons/download.svg') no-repeat center / contain;
+    mask: url('icons/download.svg') no-repeat center / contain;
+}
+
 .icon-btn .icon-svg {
     width: 14px;
     height: 14px;
@@ -399,6 +407,34 @@ h6 {
 .delete-btn .icon-svg {
     width: 13px;
     height: 13px;
+}
+
+/* Botón de descargar GPX flotando en la esquina superior derecha del mapa,
+visible en escritorio; en móvil se resuelve aparte con .map-fab */
+.map-corner-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-strong);
+    color: var(--text-dim);
+    cursor: pointer;
+    z-index: 1000;
+}
+
+.map-corner-btn:hover {
+    border-color: var(--text);
+    color: var(--text);
+}
+
+.map-corner-btn .icon-svg {
+    width: 16px;
+    height: 16px;
 }
 
 /* Atajos flotantes sobre el mapa en móvil */
@@ -551,6 +587,11 @@ h6 {
         display: none;
     }
 
+    /* En móvil el hueco de descarga se resuelve con .map-fab (aún por decidir cómo) */
+    .map-corner-btn {
+        display: none;
+    }
+
     /* Menos alto que en escritorio, el espacio de la hoja es más justo */
     .elevation-mini {
         height: 68px;
@@ -617,5 +658,10 @@ h6 {
         left: 16px;
         /* Debajo del de limpiar ruta: 40px de alto + 10px de separación */
         top: calc(env(safe-area-inset-top, 0px) + 16px + 40px + 10px);
+    }
+
+    /* A la derecha, separado del cluster de deshacer/limpiar */
+    #btn-download-gpx-fab {
+        right: 16px;
     }
 }

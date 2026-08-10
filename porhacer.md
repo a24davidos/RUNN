@@ -1,4 +1,4 @@
 - Me gustaría ver si implemento el deshacer
 - Me gustaría ver si implemento un, cerrar ruta
-- Me gustaría implementar para descargar gps
+- ~~Me gustaría implementar para descargar gps~~ (hecho: botón GPX en points-header y FAB)
 - Revisar el control de errores.

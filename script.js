@@ -97,9 +97,11 @@ let spanCounterElevation = document.getElementById('counter-elevation')
 
 let btnClearRoute = document.getElementById('btn-clear-route')
 let btnUndoPoint = document.getElementById('btn-undo-point')
+let btnDownloadGpx = document.getElementById('btn-download-gpx')
 //Atajos flotantes sobre el mapa en móvil
 let btnClearRouteFab = document.getElementById('btn-clear-route-fab')
 let btnUndoPointFab = document.getElementById('btn-undo-point-fab')
+let btnDownloadGpxFab = document.getElementById('btn-download-gpx-fab')
 let searchInput = document.getElementById('search-place')
 let searchClearBtn = document.getElementById('search-clear')
 let searchResultsList = document.getElementById('search-results')
@@ -248,6 +250,65 @@ function scheduleElevationCalculation() {
     elevationDebounceTimer = setTimeout(calculateElevation, ELEVATION_DEBOUNCE_MS)
 }
 
+// ==================== Exportar ruta ====================
+
+
+function buildGPX() {
+    if (routeGeometry.length < 2) return null
+
+    let points =
+        elevationProfile.length > 0
+            ? elevationProfile
+            : routeGeometry.map(([lat, lng]) => ({ lat, lng, elevation: null }))
+
+    let trkpts = points
+        .map((point) => {
+            let ele =
+                point.elevation != null
+                    ? `\n                <ele>${point.elevation.toFixed(1)}</ele>`
+                    : ''
+            return `            <trkpt lat="${point.lat.toFixed(6)}" lon="${point.lng.toFixed(6)}">${ele}
+            </trkpt>`
+        })
+        .join('\n')
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="RUNN" xmlns="http://www.topografix.com/GPX/1/1">
+    <trk>
+        <name>Ruta RUNN</name>
+        <trkseg>
+${trkpts}
+        </trkseg>
+    </trk>
+</gpx>
+`
+}
+
+//Genera el fichero .gpx y dispara la descarga en el navegador.
+//El desnivel se recalcula con un debounce tras cada cambio de ruta, así que si
+//se descarga justo después de tocar un punto, elevationProfile puede estar
+//todavía desactualizado o vacío. Por eso cancelamos el debounce pendiente y
+//forzamos el cálculo aquí, esperando a que termine antes de construir el GPX.
+async function downloadGPX() {
+    if (routeGeometry.length < 2) return //No hay ruta que exportar
+
+    clearTimeout(elevationDebounceTimer)
+    await calculateElevation()
+
+    let gpx = buildGPX()
+    if (!gpx) return
+
+    let blob = new Blob([gpx], { type: 'application/gpx+xml' })
+    let url = URL.createObjectURL(blob)
+
+    let link = document.createElement('a')
+    link.href = url
+    link.download = `runn-ruta-${new Date().toISOString().slice(0, 10)}.gpx`
+    link.click()
+
+    URL.revokeObjectURL(url)
+}
+
 // ==================== Setup del mapa ====================
 
 function renderMap(lat, lon) {
@@ -287,9 +348,12 @@ function initEvents() {
     btnClearRoute.addEventListener('click', clearRoute)
     //Botón para deshacer: borra el último punto añadido
     btnUndoPoint.addEventListener('click', undoLastPoint)
+    //Botón para descargar la ruta en formato GPX (importable en reloj/móvil)
+    btnDownloadGpx.addEventListener('click', downloadGPX)
     //Mismos botones pero flotando sobre el mapa, para móvil
     btnClearRouteFab.addEventListener('click', clearRoute)
     btnUndoPointFab.addEventListener('click', undoLastPoint)
+    btnDownloadGpxFab.addEventListener('click', downloadGPX)
     //Botón para borrar el texto del buscador
     searchClearBtn.addEventListener('click', () => {
         searchInput.value = ''
