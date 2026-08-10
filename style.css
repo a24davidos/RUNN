@@ -362,10 +362,16 @@ h6 {
     padding: 8px 10px;
     margin-bottom: 2px;
     border: 1px dashed transparent;
+    cursor: grab;
 }
 
 .point-item:hover {
     background: oklch(1 0 0 / 0.05);
+}
+
+.point-item.dragging {
+    opacity: 0.4;
+    cursor: grabbing;
 }
 
 .point-item span:first-child {

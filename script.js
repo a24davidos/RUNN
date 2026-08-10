@@ -16,7 +16,14 @@ const RUN_THRESHOLD = 8
 const MAX_SLOPE = 35
 const SMOOTH_WINDOW = 1
 //Suavizado extra que solo se aplica a la línea del gráfico, no al cálculo de desnivel
-const CHART_SMOOTH_WINDOW = 3
+const CHART_SMOOTH_RADIUS_RATIO = 0.04 //% de la distancia total, a cada lado
+const CHART_SMOOTH_RADIUS_MIN = 80 //metros
+const CHART_SMOOTH_RADIUS_MAX = 400 //metros
+const CHART_SMOOTH_PASSES = 3
+
+//Padding vertical del gráfico, para que no exagere visualmente desniveles pequeños
+const CHART_Y_PADDING_RATIO = 0.5
+const CHART_Y_PADDING_MIN = 8
 
 const popCanvas = document.getElementById("graphic").getContext("2d");
 
@@ -231,6 +238,12 @@ function initEvents() {
         }
     })
 
+    //Eventos para reordenar los puntos con drag & drop
+    pointList.addEventListener('dragstart', handleDragStart)
+    pointList.addEventListener('dragover', handleDragOver)
+    pointList.addEventListener('dragend', handleDragEnd)
+    pointList.addEventListener('drop', handleDrop)
+
     //Botón para limpiar la ruta
     btnClearRoute.addEventListener('click', clearRoute)
     //Botón para borrar el texto del buscador
@@ -271,6 +284,7 @@ function addPoint(lat, lng) {
     let li = document.createElement('li')
     li.classList.add('point-item')
     li.dataset.pointId = point._leaflet_id
+    li.draggable = true
 
     li.innerHTML = `
         <span>${pointNumber}</span>
@@ -303,6 +317,49 @@ function deletePoint(e) {
     fetchRoute()
 }
 
+//Guarda el <li> que se está arrastrando mientras dura el drag
+let draggedItem = null
+
+function handleDragStart(e) {
+    let item = e.target.closest('.point-item')
+    if (!item) return
+
+    draggedItem = item
+    e.dataTransfer.effectAllowed = 'move'
+    //Pequeño delay para que el navegador capture la "foto" de arrastre antes de aplicar el estilo
+    setTimeout(() => draggedItem.classList.add('dragging'), 0)
+}
+
+function handleDragOver(e) {
+    //Necesario para permitir el drop, si no el navegador lo rechaza por defecto
+    e.preventDefault()
+
+    let target = e.target.closest('.point-item')
+    if (!draggedItem || !target || target === draggedItem) return
+
+    //Decidimos si insertar antes o después según en qué mitad del elemento estamos
+    let rect = target.getBoundingClientRect()
+    let isAfter = e.clientY - rect.top > rect.height / 2
+
+    target.insertAdjacentElement(
+        isAfter ? 'afterend' : 'beforebegin',
+        draggedItem,
+    )
+}
+
+function handleDrop(e) {
+    e.preventDefault()
+}
+
+function handleDragEnd() {
+    if (draggedItem) draggedItem.classList.remove('dragging')
+    draggedItem = null
+
+    //El orden en el DOM ya cambió, solo falta renumerar y recalcular la ruta
+    recalculatePoints()
+    fetchRoute()
+}
+
 function recalculatePoints() {
     let arrPointItems = Array.from(pointItems)
 
@@ -328,6 +385,8 @@ function clearRoute() {
     //Limpiamos también la gráfica de elevación y el círculo que sigue al hover
     elevationProfile = []
     elevationChart.data.datasets[0].data = []
+    elevationChart.options.scales.y.min = undefined
+    elevationChart.options.scales.y.max = undefined
     elevationChart.update()
 
     clearElevationMarker()
@@ -370,12 +429,28 @@ async function calculateElevation() {
 
         //Para el dibujo aplicamos un suavizado extra sobre el perfil ya calculado, solo
         //afecta a la línea del gráfico, no al desnivel ni al hover (mismo orden/índices que profile)
-        let chartProfile = smoothElevations(profile, CHART_SMOOTH_WINDOW)
+        let { smoothWindow, medianWindow } = calculateChartSmoothWindow(profile)
+
+        let chartProfile = medianSmooth(profile, medianWindow)
+        for (let i = 0; i < CHART_SMOOTH_PASSES; i++) {
+            chartProfile = smoothElevations(chartProfile, smoothWindow)
+        }
 
         //Chart.js necesita {x, y} cD está en metros y lo pasamos a km
         elevationChart.data.datasets[0].data = chartProfile.map((point) => {
             return { x: point.cD / 1000, y: point.elevation }
         })
+
+        //Le damos aire al eje Y para que no exagere el desnivel real (solo dibujo)
+        let elevations = chartProfile.map((point) => point.elevation)
+        let minElevation = Math.min(...elevations)
+        let maxElevation = Math.max(...elevations)
+        let elevationRange = maxElevation - minElevation
+        let padding = Math.max(elevationRange * CHART_Y_PADDING_RATIO, CHART_Y_PADDING_MIN)
+
+        elevationChart.options.scales.y.min = minElevation - padding
+        elevationChart.options.scales.y.max = maxElevation + padding
+
         elevationChart.update()
 
         console.table(profile)
@@ -633,6 +708,43 @@ function smoothElevations(data, window = SMOOTH_WINDOW) {
         let elevation =
             neighbors.reduce((sum, p) => sum + p.elevation, 0) /
             neighbors.length
+
+        return { ...point, elevation }
+    })
+}
+
+// Pasa el radio de suavizado (metros) a nº de puntos, según el espaciado de esta ruta
+function calculateChartSmoothWindow(profile) {
+    let totalDistance = profile.at(-1).cD
+    let spacing = totalDistance / (profile.length - 1)
+
+    let radius = Math.min(
+        CHART_SMOOTH_RADIUS_MAX,
+        Math.max(CHART_SMOOTH_RADIUS_MIN, totalDistance * CHART_SMOOTH_RADIUS_RATIO),
+    )
+
+    let smoothWindow = Math.max(1, Math.round(radius / spacing))
+    
+    let medianWindow = Math.max(1, Math.round(smoothWindow / 3))
+
+    return { smoothWindow, medianWindow }
+}
+
+// Filtro de mediana: elimina picos/valles de un solo punto en vez de solo diluirlos
+function medianSmooth(data, window = 1) {
+    return data.map((point, i) => {
+        let start = Math.max(0, i - window)
+        let end = Math.min(data.length - 1, i + window)
+        let neighbors = data
+            .slice(start, end + 1)
+            .map((p) => p.elevation)
+            .sort((a, b) => a - b)
+
+        let mid = Math.floor(neighbors.length / 2)
+        let elevation =
+            neighbors.length % 2 == 0
+                ? (neighbors[mid - 1] + neighbors[mid]) / 2
+                : neighbors[mid]
 
         return { ...point, elevation }
     })
