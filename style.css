@@ -276,6 +276,40 @@ h6 {
     border-color: var(--border-strong);
 }
 
+.search-results {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    max-height: 220px;
+    overflow-y: auto;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    list-style: none;
+    margin: 0;
+    padding: 4px;
+}
+
+.search-result-item {
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.search-result-item:hover,
+.search-result-item.is-active {
+    background: var(--bg-hover, var(--border));
+}
+
+.search-result-empty {
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--text-faint);
+}
+
 .elevation-card {
     position: relative;
     height: 90px;
