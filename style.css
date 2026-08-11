@@ -1,3 +1,19 @@
+@font-face {
+    font-family: 'Cascadia Mono';
+    src: url('fonts/CascadiaMono-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Cascadia Mono';
+    src: url('fonts/CascadiaMono-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
 /* ==================== Tokens del diseño (RUNN) ==================== */
 :root {
     --bg: oklch(0.12 0 0);
@@ -12,7 +28,7 @@
     --danger-border: oklch(0.4 0.1 30);
     --danger-border-hover: oklch(0.75 0.16 30);
     --danger-text: #ff0000;
-    --mono: ui-monospace, monospace;
+    --mono: 'Cascadia Mono', ui-monospace, monospace;
     --sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
 }
 
@@ -212,7 +228,7 @@ h6 {
 
 .stat-value {
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 400;
     font-family: var(--mono);
     overflow: hidden;
     text-overflow: ellipsis;
