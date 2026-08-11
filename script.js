@@ -14,7 +14,7 @@ const WEIGHT = 4
 
 const SEARCH_DEBOUNCE_MS = 350
 const SEARCH_MIN_CHARS = 3
-const SEARCH_MAX_RESULTS = 5
+const SEARCH_MAX_RESULTS = 4
 
 //Espera a que la ruta deje de cambiar antes de llamar al IGN, así no disparamos una petición por cada punto que muevas
 const ELEVATION_DEBOUNCE_MS = 600

@@ -314,7 +314,11 @@ h6 {
     max-height: 220px;
     overflow-y: auto;
     background: var(--bg-panel);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
+    /* Sin esto el desplegable se confunde con el fondo del propio sidebar
+    (casi el mismo negro) y lo que tapa debajo (Estadísticas) parece haber
+    desaparecido en vez de estar cubierto por una capa flotando encima */
+    box-shadow: 0 8px 24px oklch(0 0 0 / 0.5);
     list-style: none;
     margin: 0;
     padding: 4px;
@@ -325,7 +329,6 @@ h6 {
     font-size: 13px;
     color: var(--text);
     cursor: pointer;
-    border-radius: 4px;
 }
 
 .search-result-item:hover,
