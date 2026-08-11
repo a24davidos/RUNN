@@ -115,14 +115,15 @@ let sidebar = document.getElementById('sidebar')
 let sheetHandle = document.getElementById('sheet-handle')
 // ==================== Arranque / Geolocalización ====================
 function init() {
+    //Renderizamos el mapa con Santiago de Compostela por defecto, sin esperar al permiso de geolocalización
+    renderMap(LATITUDE, LONGITUDE)
     navigator.geolocation.getCurrentPosition(showPosition, showErrorLocation)
 }
 
 function showPosition(pos) {
     //Guardamos la posición del usuario
     userPosition = pos
-    //Renderizamos el mapa con su posición
-    renderMap(userPosition.coords.latitude, userPosition.coords.longitude)
+    map.setView([userPosition.coords.latitude, userPosition.coords.longitude], ZOOM)
 }
 
 function showErrorLocation(err) {
@@ -133,8 +134,6 @@ function showErrorLocation(err) {
     } else {
         console.log('No hemos podido encontrar tu localización')
     }
-
-    renderMap(LATITUDE, LONGITUDE)
 }
 
 function onMapClick(e) {

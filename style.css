@@ -399,6 +399,11 @@ h6 {
     height: 14px;
 }
 
+.icon-btn .icon-svg-undo {
+    width: 11px;
+    height: 11px;
+}
+
 .search-clear .icon-svg {
     width: 12px;
     height: 12px;
