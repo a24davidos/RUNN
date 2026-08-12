@@ -1,15 +1,35 @@
 @font-face {
-    font-family: 'Cascadia Mono';
-    src: url('fonts/CascadiaMono-Regular.woff2') format('woff2');
+    font-family: 'Inter';
+    src: url('vendor/fonts/inter-400.woff2') format('woff2');
     font-weight: 400;
     font-style: normal;
     font-display: swap;
 }
-
 @font-face {
-    font-family: 'Cascadia Mono';
-    src: url('fonts/CascadiaMono-Bold.woff2') format('woff2');
+    font-family: 'Inter';
+    src: url('vendor/fonts/inter-500.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Inter';
+    src: url('vendor/fonts/inter-600.woff2') format('woff2');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Inter';
+    src: url('vendor/fonts/inter-700.woff2') format('woff2');
     font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Inter';
+    src: url('vendor/fonts/inter-800.woff2') format('woff2');
+    font-weight: 800;
     font-style: normal;
     font-display: swap;
 }
@@ -28,9 +48,11 @@
     --danger-border: oklch(0.4 0.1 30);
     --danger-border-hover: oklch(0.75 0.16 30);
     --danger-text: #ff0000;
-    --mono: 'Cascadia Mono', ui-monospace, monospace;
+    --mono: ui-monospace, monospace;
     --sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
 }
+
+/* ==================== Reset ==================== */
 
 /* 1. Usar un modelo de box-sizing más intuitivo */
 *,
@@ -115,13 +137,7 @@ h6 {
     text-wrap: balance;
 }
 
-/*
-  10. Crear un contexto de apilamiento raíz
-*/
-#root,
-#__next {
-    isolation: isolate;
-}
+/* ==================== Layout / Mapa ==================== */
 
 #container {
     display: flex;
@@ -471,7 +487,6 @@ visible en escritorio; en móvil se resuelve aparte con .map-fab */
     height: 18px;
 }
 
-/* El icono de deshacer llena más su viewBox que la X, así que a igual caja se ve más grande */
 .map-fab .icon-svg-undo {
     width: 15px;
     height: 15px;
@@ -606,7 +621,6 @@ visible en escritorio; en móvil se resuelve aparte con .map-fab */
         background: var(--border-strong);
     }
 
-    /* Quitamos el título*/
     .sidebar-header {
         display: none;
     }
@@ -616,7 +630,6 @@ visible en escritorio; en móvil se resuelve aparte con .map-fab */
         display: none;
     }
 
-    /* Menos alto que en escritorio, el espacio de la hoja es más justo */
     .elevation-mini {
         height: 68px;
     }
@@ -624,7 +637,6 @@ visible en escritorio; en móvil se resuelve aparte con .map-fab */
         display: none;
     }
 
-    /* Puramente decorativa en móvil, sin hover/touch (el marcador de la gráfica no tiene sentido con el dedo) */
     #graphic {
         pointer-events: none;
     }

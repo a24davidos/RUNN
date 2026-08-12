@@ -5,6 +5,6 @@
         "moduleResolution": "bundler",
         "checkJs": false
     },
-    "include": ["*.js", "*.d.ts"],
+    "include": ["*.js", "*.d.ts", "js/**/*.js"],
     "exclude": ["node_modules"]
 }
