@@ -198,52 +198,65 @@ function getRouteCoords() {
 
 let routeRequestId = 0
 
+//Sin ruta que calcular (menos de 2 puntos), lo dejamos todo a cero
+function resetRouteGeometry() {
+    clearTimeout(elevationDebounceTimer)
+    updateSpanKm(0)
+    routeGeometry = []
+    routeLine.setLatLngs([])
+    resetElevationDisplay()
+}
+
+//Pide la ruta a OSRM
+async function fetchRouteData(coords) {
+    const str = coords.map((x) => `${x[0]},${x[1]}`).join(';')
+
+    const response = await fetch(
+        `https://routing.openstreetmap.de/routed-foot/route/v1/foot/${str}?overview=full&geometries=geojson`,
+    )
+
+    if (!response.ok) {
+        const err = new Error(
+            `No se pudo calcular la ruta (OSRM ${response.status})`,
+        )
+        err.status = response.status
+        throw err
+    }
+
+    const data = await response.json()
+    let routeCoords = data.routes[0].geometry.coordinates.map((x) => [x[1], x[0]])
+
+    return { routeCoords, distance: data.routes[0].distance }
+}
+
+//Guardamos la ruta calculada y actualizamos lo que depende de ella
+function applyRoute(routeCoords, distance) {
+    routeLine.setLatLngs(routeCoords)
+    routeGeometry = routeCoords
+
+    //Actualizo el contador de Km
+    updateSpanKm(distance)
+
+    //Antes había que darle a un botón; ahora el desnivel se recalcula solo en cada cambio de ruta
+    scheduleElevationCalculation()
+}
+
 async function fetchRoute() {
     let coords = getRouteCoords()
     let requestId = ++routeRequestId
 
     //Tiene que haber mínimo 2 puntos para hacer una llamada a la Api
     if (coords.length < 2) {
-        clearTimeout(elevationDebounceTimer)
-        updateSpanKm(0)
-        routeGeometry = []
-        routeLine.setLatLngs([])
-        return resetElevationDisplay()
+        return resetRouteGeometry()
     }
 
     try {
-        const str = coords.map((x) => `${x[0]},${x[1]}`).join(';')
-
-        const response = await fetch(
-            `https://routing.openstreetmap.de/routed-foot/route/v1/foot/${str}?overview=full&geometries=geojson`,
-        )
-
-        if (!response.ok) {
-            const err = new Error(
-                `No se pudo calcular la ruta (OSRM ${response.status})`,
-            )
-            err.status = response.status
-            throw err
-        }
-
-        const data = await response.json()
+        let { routeCoords, distance } = await fetchRouteData(coords)
 
         //Si hay una llamada más nueva en marcha, esta respuesta ya no vale
         if (requestId !== routeRequestId) return
 
-        let routeCoords = data.routes[0].geometry.coordinates.map((x) => [
-            x[1],
-            x[0],
-        ])
-
-        routeLine.setLatLngs(routeCoords)
-        routeGeometry = routeCoords
-
-        //Actualizo el contador de Km
-        updateSpanKm(data.routes[0].distance)
-
-        //Antes había que darle a un botón; ahora el desnivel se recalcula solo en cada cambio de ruta
-        scheduleElevationCalculation()
+        applyRoute(routeCoords, distance)
     } catch (error) {
         console.error(error)
         // Futura función a implementar que muestre el error al usuario
@@ -603,46 +616,63 @@ function hideSearchResults() {
 
 // ==================== Gestión de puntos ====================
 
-function addPoint(lat, lng) {
-    let pointNumber = Object.keys(pointDict).length + 1
-
-    let point = L.marker([lat, lng], {
+//Creamos el marker numerado y lo guardamos en pointDict
+function createPointMarker(lat, lng, number) {
+    let marker = L.marker([lat, lng], {
         icon: L.divIcon({
             className: 'numbered-marker',
-            html: `${pointNumber}`,
+            html: `${number}`,
             iconSize: [ICONSIZE, ICONSIZE],
             iconAnchor: [ICONANCHOR, ICONANCHOR],
         }),
         draggable: true,
     })
 
-    point.addTo(map)
-    point.getElement().dataset.pointId = point._leaflet_id
+    marker.addTo(map)
+    marker.getElement().dataset.pointId = marker._leaflet_id
+    pointDict[marker._leaflet_id] = marker
 
-    pointDict[point._leaflet_id] = point
+    return marker
+}
 
-    point.on('dragend', function (e) {
-        let position = point.getLatLng()
+//Eventos del marker: arrastrar recalcula la ruta, click derecho lo borra
+function wireMarkerEvents(marker) {
+    marker.on('dragend', function () {
+        let position = marker.getLatLng()
         fetchRoute()
-        updateLi(point._leaflet_id, position.lat, position.lng)
+        updateLi(marker._leaflet_id, position.lat, position.lng)
     })
 
-    point.addEventListener('contextmenu', function (e) {
-        deletePointById(point._leaflet_id)
+    marker.addEventListener('contextmenu', function () {
+        deletePointById(marker._leaflet_id)
     })
+}
 
+//Creamos el <li> de la lista asociado a ese marker
+function createPointListItem(marker, number) {
     let li = document.createElement('li')
     li.classList.add('point-item')
-    li.dataset.pointId = point._leaflet_id
+    li.dataset.pointId = marker._leaflet_id
     li.draggable = true
 
+    let { lat, lng } = marker.getLatLng()
     li.innerHTML = `
-        <span>${pointNumber}</span>
-        <span>${point.getLatLng().lat.toFixed(4)}, ${point.getLatLng().lng.toFixed(4)}</span>
+        <span>${number}</span>
+        <span>${lat.toFixed(4)}, ${lng.toFixed(4)}</span>
         <button class="delete-btn"><span class="icon-svg icon-svg-x"></span></button>
     `
-    
-    //Añadimos a la lista de puntos
+
+    return li
+}
+
+//Añadir un punto: marker + li + recalcular ruta
+function addPoint(lat, lng) {
+    let pointNumber = Object.keys(pointDict).length + 1
+
+    let marker = createPointMarker(lat, lng, pointNumber)
+    wireMarkerEvents(marker)
+
+    let li = createPointListItem(marker, pointNumber)
     pointList.appendChild(li)
 
     //Recalculamos el contador de puntos
@@ -665,15 +695,21 @@ function undoLastPoint() {
     deletePointById(lastItem.dataset.pointId)
 }
 
-function deletePointById(id) {
-    //Eliminamos el nodo de la lista
+//Quitamos el <li> de la lista
+function removePointListItem(id) {
     pointList.querySelector(`[data-point-id="${id}"]`).remove()
+}
 
-    //Eliminamos la referencia dentro de leaflet
+//Quitamos el marker de Leaflet y su referencia en pointDict
+function removePointMarker(id) {
     pointDict[id].remove()
-
-    //Eliminamos la referencia de la lista
     delete pointDict[id]
+}
+
+//Borrar un punto: li + marker + renumerar + recalcular ruta
+function deletePointById(id) {
+    removePointListItem(id)
+    removePointMarker(id)
 
     recalculatePoints()
     fetchRoute()
