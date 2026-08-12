@@ -803,65 +803,81 @@ async function calculateElevation() {
     if (routeGeometry.length == 0) return
 
     try {
-        let measured = calculateCumulativeDistance()
-        let interval = calculateIntervalPoints(measured)
-        let dataPoints = calculateSelectedPoints(measured, interval)
-
-        //El IGN necesita los puntos para calcular el bbox que los engloba a todos
-        let fetchedElevation = await fetchElevation(dataPoints)
-
-        let elevationDict = dataPoints.map((x, index) => {
-            return {
-                lat: x.lat,
-                lng: x.lng,
-                cD: x.cD,
-                elevation: fetchedElevation[index],
-            }
-        })
-
-        //El perfil es la ruta ya limpia de valores extraños y suavizada. Este es el que manda
-        //para el cálculo de desnivel y para el hover (lat/lng reales de cada punto).
-        let profile = smoothElevations(filterUnrealisticSlopes(elevationDict))
-
-        //Datos con la subida y bajada total en metros
-        let elevationChange = calculateElevationChange(profile)
-        updateSpanElevation(elevationChange)
-
-        //Guardamos el perfil completo para poder recuperar lat/lng al pasar el ratón por el chart
-        elevationProfile = profile
-
-        //Para el dibujo aplicamos un suavizado extra sobre el perfil ya calculado, solo
-        //afecta a la línea del gráfico, no al desnivel ni al hover (mismo orden/índices que profile)
-        let { smoothWindow, medianWindow } = calculateChartSmoothWindow(profile)
-
-        let chartProfile = medianSmooth(profile, medianWindow)
-        for (let i = 0; i < CHART_SMOOTH_PASSES; i++) {
-            chartProfile = smoothElevations(chartProfile, smoothWindow)
-        }
-
-        //Chart.js necesita {x, y} cD está en metros y lo pasamos a km
-        elevationChart.data.datasets[0].data = chartProfile.map((point) => {
-            return { x: point.cD / 1000, y: point.elevation }
-        })
-
-        //Le damos aire al eje Y para que no exagere el desnivel real (solo dibujo)
-        let elevations = chartProfile.map((point) => point.elevation)
-        let minElevation = Math.min(...elevations)
-        let maxElevation = Math.max(...elevations)
-        let elevationRange = maxElevation - minElevation
-        let padding = Math.max(elevationRange * CHART_Y_PADDING_RATIO, CHART_Y_PADDING_MIN)
-
-        elevationChart.options.scales.y.min = minElevation - padding
-        elevationChart.options.scales.y.max = maxElevation + padding
-
-        elevationChart.update()
-
-        console.table(profile)
+        let profile = await computeElevationProfile()
+        applyElevationProfile(profile)
     } catch (error) {
         console.error(error)
         // Futura función a implementar que muestre el error al usuario
         //showError("No se pudo calcular la elevación")
     }
+}
+
+//Muestrea la ruta, pide la elevación al IGN y devuelve el perfil ya limpio de valores extraños y suavizado.
+//Este es el que manda para el cálculo de desnivel y para el hover (lat/lng reales de cada punto).
+async function computeElevationProfile() {
+    let measured = calculateCumulativeDistance()
+    let interval = calculateIntervalPoints(measured)
+    let dataPoints = calculateSelectedPoints(measured, interval)
+
+    //El IGN necesita los puntos para calcular el bbox que los engloba a todos
+    let fetchedElevation = await fetchElevation(dataPoints)
+
+    let elevationDict = dataPoints.map((x, index) => {
+        return {
+            lat: x.lat,
+            lng: x.lng,
+            cD: x.cD,
+            elevation: fetchedElevation[index],
+        }
+    })
+
+    return smoothElevations(filterUnrealisticSlopes(elevationDict))
+}
+
+//Guarda el perfil calculado y actualiza: contador de desnivel, estado para el hover y gráfica
+function applyElevationProfile(profile) {
+    //Datos con la subida y bajada total en metros
+    let elevationChange = calculateElevationChange(profile)
+    updateSpanElevation(elevationChange)
+
+    //Guardamos el perfil completo para poder recuperar lat/lng al pasar el ratón por el chart
+    elevationProfile = profile
+
+    updateElevationChart(buildChartProfile(profile))
+
+    console.table(profile)
+}
+
+//Para el dibujo aplicamos un suavizado extra sobre el perfil ya calculado (solo afecta a la línea del gráfico)
+function buildChartProfile(profile) {
+    let { smoothWindow, medianWindow } = calculateChartSmoothWindow(profile)
+
+    let chartProfile = medianSmooth(profile, medianWindow)
+    for (let i = 0; i < CHART_SMOOTH_PASSES; i++) {
+        chartProfile = smoothElevations(chartProfile, smoothWindow)
+    }
+
+    return chartProfile
+}
+
+//Actualiza los datos y el rango del eje Y del elevationChart
+function updateElevationChart(chartProfile) {
+    //Chart.js necesita {x, y} cD está en metros y lo pasamos a km
+    elevationChart.data.datasets[0].data = chartProfile.map((point) => {
+        return { x: point.cD / 1000, y: point.elevation }
+    })
+
+    //Le damos aire al eje Y para que no exagere el desnivel real (solo dibujo)
+    let elevations = chartProfile.map((point) => point.elevation)
+    let minElevation = Math.min(...elevations)
+    let maxElevation = Math.max(...elevations)
+    let elevationRange = maxElevation - minElevation
+    let padding = Math.max(elevationRange * CHART_Y_PADDING_RATIO, CHART_Y_PADDING_MIN)
+
+    elevationChart.options.scales.y.min = minElevation - padding
+    elevationChart.options.scales.y.max = maxElevation + padding
+
+    elevationChart.update()
 }
 
 //Fuente de verdad para evitar bugs con el mouseleave del chartJS
