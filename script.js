@@ -5,7 +5,7 @@
 //Latitude y Longitud por defecto (Santiago de Compostela)
 const LATITUDE = 42.88235
 const LONGITUDE = -8.54586
-const ZOOM = 13
+const ZOOM = 14
 const MAXZOOM = 18
 const ICONSIZE = 25
 const ICONANCHOR = 15
@@ -18,6 +18,13 @@ const SEARCH_MAX_RESULTS = 4
 
 //Espera a que la ruta deje de cambiar antes de llamar al IGN, así no disparamos una petición por cada punto que muevas
 const ELEVATION_DEBOUNCE_MS = 600
+
+//Resoluciones (en metros) que ofrece el WCS del IGN, de más a menos detalle
+const ELEVATION_RESOLUTIONS = [5, 25, 200, 500, 1000]
+//Límite de ancho/alto en píxeles que admite el servicio
+const ELEVATION_MAX_PIXELS = 4096
+//Metros por grado de latitud, usado para estimar el tamaño del bbox en píxeles
+const METERS_PER_DEGREE = 111320
 
 const RUN_THRESHOLD = 8
 const MAX_SLOPE = 35
@@ -113,6 +120,7 @@ let elevationDebounceTimer = null
 
 let sidebar = document.getElementById('sidebar')
 let sheetHandle = document.getElementById('sheet-handle')
+
 // ==================== Arranque / Geolocalización ====================
 function init() {
     //Renderizamos el mapa con Santiago de Compostela por defecto, sin esperar al permiso de geolocalización
@@ -329,6 +337,9 @@ function renderMap(lat, lon) {
 
 function initEvents() {
     map.on('click', onMapClick)
+
+    //Desactivamos el menú contextual por defecto del navegador sobre el mapa
+    map.getContainer().addEventListener('contextmenu', (e) => e.preventDefault())
 
     //Evento para eliminar puntos
     pointList.addEventListener('click', (e) => {
@@ -941,8 +952,23 @@ function calculateSelectedPoints(measured, n) {
     return data.points
 }
 
-// Pide la elevación al WCS del IGN (Muestra 5m). Hace una sola petición con el
-// bbox que engloba toda la ruta, y luego muestrea la celda de cada punto.
+// Para el bbox dado, elige la resolución más fina que no supere el MAXSIZE del IGN
+function pickElevationResolution(minLat, maxLat, minLng, maxLng) {
+    const heightMeters = (maxLat - minLat) * METERS_PER_DEGREE
+    const widthMeters = (maxLng - minLng) * METERS_PER_DEGREE * Math.cos((minLat * Math.PI) / 180)
+
+    const fallbackResolution = ELEVATION_RESOLUTIONS[ELEVATION_RESOLUTIONS.length - 1]
+
+    return ELEVATION_RESOLUTIONS.find((res) => {
+        const widthPixels = widthMeters / res
+        const heightPixels = heightMeters / res
+        return widthPixels <= ELEVATION_MAX_PIXELS && heightPixels <= ELEVATION_MAX_PIXELS
+    }) ?? fallbackResolution
+}
+
+// Pide la elevación al WCS del IGN. Hace una sola petición con el bbox que
+// engloba toda la ruta, y luego muestrea la celda de cada punto. La resolución
+// de la malla se adapta al tamaño de la ruta para no superar el MAXSIZE del IGN.
 async function fetchElevation(points) {
     if (points.length == 0) return
 
@@ -956,8 +982,11 @@ async function fetchElevation(points) {
     let minLng = Math.min(...lngs) - margin
     let maxLng = Math.max(...lngs) + margin
 
+    let resolution = pickElevationResolution(minLat, maxLat, minLng, maxLng)
+    console.log(`Elevación: usando malla de ${resolution}m`)
+
     const response = await fetch(
-        `https://servicios.idee.es/wcs-inspire/mdt?service=WCS&version=2.0.1&request=GetCoverage&coverageId=Elevacion4258_5&subset=lat(${minLat},${maxLat})&subset=long(${minLng},${maxLng})&format=application/asc`,
+        `https://servicios.idee.es/wcs-inspire/mdt?service=WCS&version=2.0.1&request=GetCoverage&coverageId=Elevacion4258_${resolution}&subset=lat(${minLat},${maxLat})&subset=long(${minLng},${maxLng})&format=application/asc`,
     )
 
     if (!response.ok) {

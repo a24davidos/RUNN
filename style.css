@@ -229,7 +229,7 @@ h6 {
 .stat-value {
     font-size: 16px;
     font-weight: 400;
-    font-family: var(--mono);
+    font-family: ui-monospace, monospace;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
