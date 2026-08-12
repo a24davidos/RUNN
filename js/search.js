@@ -1,6 +1,12 @@
 // ==================== Buscador ====================
 
-import { SEARCH_DEBOUNCE_MS, SEARCH_MIN_CHARS, SEARCH_MAX_RESULTS, ZOOM } from './config.js'
+import {
+    SEARCH_DEBOUNCE_MS,
+    SEARCH_MIN_CHARS,
+    SEARCH_MAX_RESULTS,
+    SEARCH_PROVIDER,
+    ZOOM,
+} from './config.js'
 import { state } from './state.js'
 
 let searchInput = document.getElementById('search-place')
@@ -53,11 +59,12 @@ async function fetchSearchResults(query) {
     searchAbortController = new AbortController()
 
     try {
-        let url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=${SEARCH_MAX_RESULTS}`
-        let response = await fetch(url, { signal: searchAbortController.signal })
-        let data = await response.json()
+        let results =
+            SEARCH_PROVIDER === 'nominatim'
+                ? await fetchNominatim(query, searchAbortController.signal)
+                : await fetchPhoton(query, searchAbortController.signal)
 
-        renderSearchResults(data.features || [])
+        renderSearchResults(results)
     } catch (error) {
         //Si el error es por abort, es esperado (petición cancelada por una más reciente)
         if (error.name !== 'AbortError') {
@@ -66,33 +73,68 @@ async function fetchSearchResults(query) {
     }
 }
 
-function renderSearchResults(features) {
+//Photon (komoot): a veces muy lento o caído, se deja como alternativa vía SEARCH_PROVIDER
+async function fetchPhoton(query, signal) {
+    let url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=${SEARCH_MAX_RESULTS}`
+    let response = await fetch(url, { signal })
+    let data = await response.json()
+
+    return (data.features || []).map((feature) => ({
+        lat: feature.geometry.coordinates[1],
+        lon: feature.geometry.coordinates[0],
+        label: formatPhotonLabel(feature.properties),
+    }))
+}
+
+function formatPhotonLabel(props) {
+    //Photon separa el nombre del resto de la jerarquía (ciudad, estado, país...)
+    let parts = [props.name, props.city, props.state, props.country].filter(Boolean)
+    //Quitamos duplicados consecutivos (p.ej. cuando name === city)
+    return [...new Set(parts)].join(', ')
+}
+
+//Nominatim (OSM): misma fuente que los tiles del mapa, mucho más rápido en pruebas
+async function fetchNominatim(query, signal) {
+    let url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=${SEARCH_MAX_RESULTS}`
+    let response = await fetch(url, { signal })
+    let data = await response.json()
+
+    return data.map((item) => ({
+        lat: parseFloat(item.lat),
+        lon: parseFloat(item.lon),
+        label: formatNominatimLabel(item),
+    }))
+}
+
+function formatNominatimLabel(item) {
+    let address = item.address || {}
+    //Nominatim no separa "nombre" del resto, así que usamos el primer trozo del display_name
+    let name = item.display_name.split(',')[0].trim()
+    let city = address.city || address.town || address.village
+    let parts = [name, city, address.state, address.country].filter(Boolean)
+    //Quitamos duplicados consecutivos (p.ej. cuando name === city)
+    return [...new Set(parts)].join(', ')
+}
+
+function renderSearchResults(results) {
     searchResultsList.innerHTML = ''
 
-    if (features.length === 0) {
+    if (results.length === 0) {
         searchResultsList.innerHTML = '<li class="search-result-empty">Sin resultados</li>'
         searchResultsList.hidden = false
         return
     }
 
-    features.forEach((feature) => {
+    results.forEach((result) => {
         let li = document.createElement('li')
         li.classList.add('search-result-item')
-        li.textContent = formatSearchResultLabel(feature)
-        li.dataset.lat = feature.geometry.coordinates[1]
-        li.dataset.lon = feature.geometry.coordinates[0]
+        li.textContent = result.label
+        li.dataset.lat = result.lat
+        li.dataset.lon = result.lon
         searchResultsList.appendChild(li)
     })
 
     searchResultsList.hidden = false
-}
-
-function formatSearchResultLabel(feature) {
-    let props = feature.properties
-    //Photon separa el nombre del resto de la jerarquía (ciudad, estado, país...)
-    let parts = [props.name, props.city, props.state, props.country].filter(Boolean)
-    //Quitamos duplicados consecutivos (p.ej. cuando name === city)
-    return [...new Set(parts)].join(', ')
 }
 
 function handleSearchResultClick(e) {

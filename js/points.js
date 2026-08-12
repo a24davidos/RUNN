@@ -133,17 +133,22 @@ function undoLastPoint() {
 
 //Quitamos el <li> de la lista
 function removePointListItem(id) {
-    pointList.querySelector(`[data-point-id="${id}"]`).remove()
+    let item = pointList.querySelector(`[data-point-id="${id}"]`)
+    if (item) item.remove()
 }
 
 //Quitamos el marker de Leaflet y su referencia en pointDict
 function removePointMarker(id) {
+    if (!pointDict[id]) return
     pointDict[id].remove()
     delete pointDict[id]
 }
 
 //Borrar un punto: li + marker + renumerar + recalcular ruta
 function deletePointById(id) {
+    //Si el punto ya no existe (doble borrado) no hacemos nada
+    if (!pointDict[id]) return
+
     removePointListItem(id)
     removePointMarker(id)
 
@@ -226,5 +231,7 @@ function updateSpanCounter(count) {
 
 function updateLi(id, lat, lng) {
     let target = Array.from(pointItems).find((x) => x.dataset.pointId == id)
+    //Si el punto se borró justo antes de que terminara el drag, no hay li que actualizar
+    if (!target) return
     target.children[1].innerText = `${lat.toFixed(4)}, ${lng.toFixed(4)}`
 }

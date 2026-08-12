@@ -13,6 +13,8 @@ export const WEIGHT = 4
 export const SEARCH_DEBOUNCE_MS = 350
 export const SEARCH_MIN_CHARS = 3
 export const SEARCH_MAX_RESULTS = 4
+//Proveedor del buscador de lugares: 'photon' o 'nominatim'
+export const SEARCH_PROVIDER = 'nominatim'
 
 //Espera a que la ruta deje de cambiar antes de llamar al IGN, así no disparamos una petición por cada punto que muevas
 export const ELEVATION_DEBOUNCE_MS = 600
