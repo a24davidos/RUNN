@@ -318,12 +318,18 @@ async function downloadGPX() {
     let gpx = buildGPX()
     if (!gpx) return
 
-    let blob = new Blob([gpx], { type: 'application/gpx+xml' })
+    let filename = `runn-ruta-${new Date().toISOString().slice(0, 10)}.gpx`
+    triggerDownload(gpx, filename, 'application/gpx+xml')
+}
+
+//Utilidad para descargar
+function triggerDownload(content, filename, mimeType) {
+    let blob = new Blob([content], { type: mimeType })
     let url = URL.createObjectURL(blob)
 
     let link = document.createElement('a')
     link.href = url
-    link.download = `runn-ruta-${new Date().toISOString().slice(0, 10)}.gpx`
+    link.download = filename
     link.click()
 
     URL.revokeObjectURL(url)
@@ -711,8 +717,7 @@ function deletePointById(id) {
     removePointListItem(id)
     removePointMarker(id)
 
-    recalculatePoints()
-    fetchRoute()
+    syncPointsAndRoute()
 }
 
 //Guarda el <li> que se está arrastrando mientras dura el drag
@@ -753,9 +758,7 @@ function handleDragEnd() {
     if (draggedItem) draggedItem.classList.remove('dragging')
     draggedItem = null
 
-    //El orden en el DOM ya cambió, solo falta renumerar y recalcular la ruta
-    recalculatePoints()
-    fetchRoute()
+    syncPointsAndRoute()
 }
 
 function recalculatePoints() {
@@ -769,17 +772,20 @@ function recalculatePoints() {
     updateSpanCounter(arrPointItems.length)
 }
 
+//Tras borrar un punto o reordenar la lista: renumera y vuelve a pedir la ruta
+function syncPointsAndRoute() {
+    recalculatePoints()
+    fetchRoute()
+}
+
+//Borrar ruta: puntos + geometría/elevación
 function clearRoute() {
     pointList.innerHTML = ''
     Object.values(pointDict).forEach((marker) => marker.remove())
     pointDict = {}
-
-    routeLine.setLatLngs([])
-    routeGeometry = []
     updateSpanCounter(0)
-    updateSpanKm(0)
 
-    resetElevationDisplay()
+    resetRouteGeometry()
 }
 
 //Limpia estadística, gráfica y marcador de elevación (ruta vacía o con < 2 puntos)
@@ -844,8 +850,6 @@ function applyElevationProfile(profile) {
     elevationProfile = profile
 
     updateElevationChart(buildChartProfile(profile))
-
-    console.table(profile)
 }
 
 //Para el dibujo aplicamos un suavizado extra sobre el perfil ya calculado (solo afecta a la línea del gráfico)
@@ -1018,21 +1022,26 @@ function pickElevationResolution(minLat, maxLat, minLng, maxLng) {
     }) ?? fallbackResolution
 }
 
+//Rectángulo que engloba todos los puntos, con margen para que ninguno quede justo en el borde
+function calculateBoundingBox(points, margin = 0.001) {
+    let lats = points.map((p) => p.lat)
+    let lngs = points.map((p) => p.lng)
+
+    return {
+        minLat: Math.min(...lats) - margin,
+        maxLat: Math.max(...lats) + margin,
+        minLng: Math.min(...lngs) - margin,
+        maxLng: Math.max(...lngs) + margin,
+    }
+}
+
 // Pide la elevación al WCS del IGN. Hace una sola petición con el bbox que
 // engloba toda la ruta, y luego muestrea la celda de cada punto. La resolución
 // de la malla se adapta al tamaño de la ruta para no superar el MAXSIZE del IGN.
 async function fetchElevation(points) {
     if (points.length == 0) return
 
-    let lats = points.map((p) => p.lat)
-    let lngs = points.map((p) => p.lng)
-
-    //Margen para que ningún punto quede justo en el borde del bbox
-    let margin = 0.001
-    let minLat = Math.min(...lats) - margin
-    let maxLat = Math.max(...lats) + margin
-    let minLng = Math.min(...lngs) - margin
-    let maxLng = Math.max(...lngs) + margin
+    let { minLat, maxLat, minLng, maxLng } = calculateBoundingBox(points)
 
     let resolution = pickElevationResolution(minLat, maxLat, minLng, maxLng)
     console.log(`Elevación: usando malla de ${resolution}m`)
