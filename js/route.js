@@ -22,7 +22,7 @@ export function initRouteEvents() {
 //este módulo no necesita saber cómo se leen los puntos de la lista.
 export async function fetchRoute(coords) {
     let requestId = ++routeRequestId
-
+    
     //Tiene que haber mínimo 2 puntos para hacer una llamada a la Api
     if (coords.length < 2) {
         return resetRouteGeometry()
@@ -44,6 +44,8 @@ export async function fetchRoute(coords) {
 
 //Sin ruta que calcular (menos de 2 puntos), lo dejamos todo a cero
 export function resetRouteGeometry() {
+    //Invalidamos cualquier petición en curso
+    routeRequestId++
     updateSpanKm(0)
     state.routeGeometry = []
     routeLine.setLatLngs([])
