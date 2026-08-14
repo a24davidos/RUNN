@@ -21,6 +21,7 @@ let spanCounterElevation = document.getElementById('counter-elevation')
 
 //Privado: nadie fuera de este módulo sabe que el debounce existe
 let elevationDebounceTimer = null
+let elevationRequestId = 0
 
 //Si llega otro cambio de ruta antes de que salte el timer, se cancela y se reinicia la cuenta
 export function scheduleElevation() {
@@ -36,6 +37,9 @@ export function flushElevation() {
 
 //Limpia estadística, gráfica y marcador de elevación (ruta vacía o con < 2 puntos)
 export function resetElevation() {
+    //Invalidamos cualquier petición en curso
+    elevationRequestId++
+
     clearTimeout(elevationDebounceTimer)
     updateSpanElevation(null)
     state.elevationProfile = []
@@ -44,12 +48,18 @@ export function resetElevation() {
 
 // Calcula el desnivel del inicio al final de la ruta
 async function calculateElevation() {
+
+    let requestId = ++elevationRequestId
+
     //No se puede calcular la elevación de algo que no hay dibujado
     if (state.routeGeometry.length == 0) return
 
     try {
         let profile = await computeElevationProfile()
-        applyElevationProfile(profile)
+
+        if (requestId === elevationRequestId){
+            applyElevationProfile(profile)
+        }
     } catch (error) {
         console.error(error)
         // Futura función a implementar que muestre el error al usuario
