@@ -4,9 +4,7 @@
     "description": "",
     "main": "js/main.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
-        "format": "prettier --write .",
-        "format:check": "prettier --check ."
+        "test": "echo \"Error: no test specified\" && exit 1"
     },
     "keywords": [],
     "author": "",
@@ -14,7 +12,6 @@
     "type": "module",
     "devDependencies": {
         "@types/leaflet": "^1.9.21",
-        "chart.js": "^4.5.1",
-        "prettier": "3.9.5"
+        "chart.js": "^4.5.1"
     }
 }
