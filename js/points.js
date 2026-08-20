@@ -99,6 +99,11 @@ function wireMarkerEvents(marker) {
     marker.addEventListener('contextmenu', function () {
         deletePointById(marker._leaflet_id)
     })
+
+    //Evitamos que el click sobre el marker le cree otro marquer encima
+    marker.on('click', function (e) {
+        L.DomEvent.stopPropagation(e)
+    })
 }
 
 //Creamos el <li> de la lista asociado a ese marker
