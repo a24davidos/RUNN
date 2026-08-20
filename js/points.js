@@ -74,7 +74,7 @@ function createPointMarker(lat, lng, number) {
     let marker = L.marker([lat, lng], {
         icon: L.divIcon({
             className: 'numbered-marker',
-            html: `${number}`,
+            html: `<span class="marker-number">${number}</span>`,
             iconSize: [ICONSIZE, ICONSIZE],
             iconAnchor: [ICONANCHOR, ICONANCHOR],
         }),
@@ -90,7 +90,14 @@ function createPointMarker(lat, lng, number) {
 
 //Eventos del marker: arrastrar recalcula la ruta, click derecho lo borra
 function wireMarkerEvents(marker) {
+    
+    marker.on('dragstart', function () {
+        marker.getElement().classList.add('dragging')
+    })
+
     marker.on('dragend', function () {
+        marker.getElement().classList.remove('dragging')
+
         let position = marker.getLatLng()
         fetchRoute(getRouteCoords())
         updateLi(marker._leaflet_id, position.lat, position.lng)
@@ -227,7 +234,7 @@ function clearRoute() {
 
 function setPointNumber(li, marker, number) {
     li.children[0].innerHTML = number
-    marker.getElement().innerHTML = number
+    marker.getElement().querySelector('.marker-number').innerHTML = number
 }
 
 function updateSpanCounter(count) {
