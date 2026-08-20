@@ -7,8 +7,8 @@
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "keywords": [],
-    "author": "",
-    "license": "ISC",
+    "author": "a24davidos",
+    "license": "MIT",
     "type": "module",
     "devDependencies": {
         "@types/leaflet": "^1.9.21",

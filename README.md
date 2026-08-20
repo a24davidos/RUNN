@@ -47,4 +47,4 @@ Y abrir `http://localhost:8000` en el navegador.
 
 ## Licencia
 
-ISC.
+MIT © a24davidos
