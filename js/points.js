@@ -122,7 +122,8 @@ function createPointListItem(marker, number) {
 
     let { lat, lng } = marker.getLatLng()
     li.innerHTML = `
-        <span>${number}</span>
+        <span class="drag-handle"><span class="icon-svg icon-svg-drag"></span></span>
+        <span class="point-number">${number}</span>
         <span>${lat.toFixed(4)}, ${lng.toFixed(4)}</span>
         <button class="delete-btn"><span class="icon-svg icon-svg-x"></span></button>
     `
@@ -233,7 +234,7 @@ function clearRoute() {
 }
 
 function setPointNumber(li, marker, number) {
-    li.children[0].innerHTML = number
+    li.querySelector('.point-number').innerHTML = number
     marker.getElement().querySelector('.marker-number').innerHTML = number
 }
 
@@ -245,5 +246,5 @@ function updateLi(id, lat, lng) {
     let target = Array.from(pointItems).find((x) => x.dataset.pointId == id)
     //Si el punto se borró justo antes de que terminara el drag, no hay li que actualizar
     if (!target) return
-    target.children[1].innerText = `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+    target.children[2].innerText = `${lat.toFixed(4)}, ${lng.toFixed(4)}`
 }
