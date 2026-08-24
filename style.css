@@ -419,6 +419,12 @@ h6 {
     color: var(--text);
 }
 
+.icon-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+    pointer-events: none;
+}
+
 .icon-btn-danger {
     border-color: var(--danger-border);
     color: var(--danger-text);
@@ -471,8 +477,8 @@ h6 {
 }
 
 .delete-btn .icon-svg {
-    width: 13px;
-    height: 13px;
+    width: 16px;
+    height: 16px;
 }
 
 /* Botón de descargar GPX flotando en la esquina superior derecha del mapa,
@@ -518,9 +524,15 @@ visible en escritorio; en móvil se resuelve aparte con .map-fab */
     height: 15px;
 }
 
+.map-fab:disabled {
+    opacity: 0.35;
+    pointer-events: none;
+}
+
 #point-list {
     flex: 1;
     overflow-y: auto;
+    scrollbar-gutter: stable;
     list-style: none;
     margin: 0;
     padding: 0 12px 12px;
@@ -541,8 +553,20 @@ visible en escritorio; en móvil se resuelve aparte con .map-fab */
 }
 
 .point-item.dragging {
-    opacity: 0.4;
+    height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-bottom: 0;
+    border-width: 0;
+    opacity: 0;
+    overflow: hidden;
     cursor: grabbing;
+}
+
+.drag-placeholder {
+    border-color: var(--accent);
+    background: oklch(1 0 0 / 0.03);
+    padding: 0;
 }
 
 .drag-handle {
@@ -565,17 +589,20 @@ visible en escritorio; en móvil se resuelve aparte con .map-fab */
 
 .point-number {
     font-family: ui-monospace, monospace;
-    font-size: 11.5px;
+    font-size: 14px;
+    font-weight: 700;
     color: var(--accent);
     width: 26px;
     flex: none;
+    align-self: baseline;
 }
 
-.point-item span:last-of-type {
+.point-coords {
     font-family: ui-monospace, monospace;
     font-size: 12.5px;
     color: var(--text-dim);
     flex: 1;
+    align-self: baseline;
 }
 
 .delete-btn {
@@ -701,7 +728,7 @@ visible en escritorio; en móvil se resuelve aparte con .map-fab */
         font-size: 13px;
     }
 
-    .point-item span:last-of-type {
+    .point-coords {
         font-size: 14px;
     }
 
