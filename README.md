@@ -24,7 +24,7 @@ El proyecto es JavaScript vanilla (ES modules) sin framework ni proceso de build
 - **OSRM** ([routing.openstreetmap.de](https://routing.openstreetmap.de/)), perfil `foot`, para calcular el trazado sobre calles y senderos reales.
 - **[Servicio WCS del IGN/IDEE](https://www.idee.es/)** (Instituto Geográfico Nacional) para los datos de elevación del terreno.
 
-Todas las dependencias externas (Leaflet, Chart.js, fuentes) están vendorizadas en el repositorio, por lo que la app no depende de ningún CDN para funcionar.
+Las librerías del front (Leaflet, Chart.js) están vendorizadas en el repositorio, por lo que no dependen de ningún CDN. El trazado de rutas, el buscador y el perfil de elevación sí dependen de APIs externas (OSRM, Nominatim/Photon, IGN) para funcionar.
 
 ## Desarrollo local
 
@@ -42,7 +42,6 @@ Y abrir `http://localhost:8000` en el navegador.
 
 - Sistema de notificaciones/toast para dar feedback más claro de las acciones.
 - Mostrar el nombre de la calle en la lista de puntos en lugar de las coordenadas.
-- Historial de deshacer con una pila de hasta 20 acciones (actualmente solo permite deshacer el último punto).
 - Rediseño de la interfaz en móvil para mejorar la usabilidad.
 
 ## Licencia
