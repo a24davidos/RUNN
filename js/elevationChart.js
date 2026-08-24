@@ -6,6 +6,9 @@ import { state } from './state.js'
 let chartCanvas = document.getElementById('graphic')
 let popCanvas = chartCanvas.getContext('2d')
 
+//Leemos el verde desde el CSS (--accent)
+let accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()
+
 //Marcador que se mueve por la ruta al pasar el ratón por la gráfica
 let elevationMarker = null
 
@@ -20,8 +23,8 @@ let elevationChart = new Chart(popCanvas, {
             cubicInterpolationMode: 'monotone',
             pointRadius: 0,
             pointHoverRadius: 4,
-            borderColor: 'oklch(0.7 0.19 145)',
-            backgroundColor: 'oklch(0.7 0.19 145 / 0.18)',
+            borderColor: accentColor,
+            backgroundColor: accentColor + '2e',
             borderWidth: 1.6,
             fill: true
         }]

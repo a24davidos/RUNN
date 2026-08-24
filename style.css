@@ -44,7 +44,7 @@
     --text-dim: oklch(0.75 0 0);
     --text-muted: oklch(0.65 0 0);
     --text-faint: oklch(0.6 0 0);
-    --accent: oklch(0.7 0.19 145);
+    --accent: #00ff41;
     --danger-border: oklch(0.4 0.1 30);
     --danger-border-hover: oklch(0.75 0.16 30);
     --danger-text: #ff0000;
