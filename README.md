@@ -12,7 +12,7 @@ No requiere registro ni cuenta, no guarda datos en ningún servidor y es gratuit
 - Búsqueda de direcciones y lugares para centrar el mapa rápidamente.
 - Cálculo de distancia total y perfil de elevación de la ruta en tiempo real.
 - Descarga de la ruta en formato GPX, compatible con la mayoría de relojes GPS y apps de running.
-- Deshacer el último punto añadido o limpiar la ruta por completo.
+- Deshacer hasta las últimas 20 acciones o limpiar la ruta por completo.
 
 ## Tecnologías
 
