@@ -16,6 +16,15 @@ export function initRouteEvents() {
     btnDownloadGpx.addEventListener('click', downloadGPX)
     //Mismo botón flotando sobre el mapa, para móvil
     btnDownloadGpxFab.addEventListener('click', downloadGPX)
+
+    updateDownloadButtonState()
+}
+
+//menos de 2 puntos nada que exportar
+export function updateDownloadButtonState() {
+    let disabled = state.routeGeometry.length < 2
+    btnDownloadGpx.disabled = disabled
+    btnDownloadGpxFab.disabled = disabled
 }
 
 //Pide la ruta a OSRM y la aplica. Recibe las coordenadas ya calculadas —
@@ -50,6 +59,7 @@ export function resetRouteGeometry() {
     state.routeGeometry = []
     routeLine.setLatLngs([])
     resetElevation()
+    updateDownloadButtonState()
 }
 
 //Pide la ruta a OSRM
@@ -81,6 +91,7 @@ function applyRoute(routeCoords, distance) {
 
     //Actualizo el contador de Km
     updateSpanKm(distance)
+    updateDownloadButtonState()
 
     //Antes había que darle a un botón; ahora el desnivel se recalcula solo en cada cambio de ruta
     scheduleElevation()

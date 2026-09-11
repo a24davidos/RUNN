@@ -499,14 +499,24 @@ visible en escritorio; en móvil se resuelve aparte con .map-fab */
     z-index: 1000;
 }
 
-.map-corner-btn:hover {
+.map-corner-btn:hover:not(:disabled) {
     border-color: var(--text);
     color: var(--text);
+    transform: scale(1.04);
+}
+
+.map-corner-btn:disabled {
+    cursor: default;
+    opacity: 0.75;
 }
 
 .map-corner-btn .icon-svg {
     width: 16px;
     height: 16px;
+}
+
+.map-corner-btn:hover:not(:disabled) .icon-svg {
+    transform: scale(calc(1 / 1.04));
 }
 
 /* Atajos flotantes sobre el mapa en móvil */
